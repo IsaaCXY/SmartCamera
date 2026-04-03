@@ -1,0 +1,36 @@
+name: smart_cam
+description: "A smart camera app with AI-powered shooting suggestions."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # UI & State Management
+  provider: ^6.1.1
+  
+  # Camera
+  camera: ^0.10.5
+  
+  # HTTP for API calls
+  http: ^1.2.0
+  
+  # Image processing
+  image: ^4.1.7
+  
+  # Utilities
+  path_provider: ^2.1.2
+  path: ^1.8.3
+  logger: ^2.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
