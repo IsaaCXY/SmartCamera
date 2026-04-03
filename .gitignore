@@ -1,23 +1,23 @@
 ```
 # Build artifacts
-/build/
-/bin/
-/obj/
+build/
+dist/
 
-# Dependency directories
-.pub/
+# Dependencies
+.pub-cache/
 .dart_tool/
 .packages
 
-# Logs
+# Logs and temp files
 *.log
+*.tmp
 
 # Environment
 .env
 .env.local
 *.env.*
 
-# IDE files
+# Editor/IDE
 .vscode/
 .idea/
 *.swp
