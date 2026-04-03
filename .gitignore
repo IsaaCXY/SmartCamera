@@ -1,24 +1,23 @@
 ```
-# Dependencies
+# Build artifacts
+/build/
+/bin/
+/obj/
+
+# Dependency directories
+.pub/
 .dart_tool/
 .packages
-.pub/
-pubspec.lock
-
-# Build outputs
-build/
-dist/
 
 # Logs
 *.log
-**/logs
 
-# Environment variables
+# Environment
 .env
 .env.local
 *.env.*
 
-# IDE
+# IDE files
 .vscode/
 .idea/
 *.swp
@@ -27,9 +26,4 @@ dist/
 # OS generated files
 .DS_Store
 Thumbs.db
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
 ```
