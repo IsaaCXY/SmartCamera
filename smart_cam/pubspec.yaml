@@ -34,3 +34,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Only Android and iOS platforms are supported
+  platforms:
+    android:
+    ios:
