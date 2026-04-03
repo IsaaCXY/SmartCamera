@@ -1,7 +1,7 @@
 /// Settings page for configuring app preferences.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../presentation/settings_service.dart';
+import '../settings_service.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});

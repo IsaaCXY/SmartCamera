@@ -14,6 +14,15 @@ void main() async {
   runApp(const SmartCamApp());
 }
 
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const SmartCamApp();
+  }
+}
+
 class SmartCamApp extends StatelessWidget {
   const SmartCamApp({super.key});
 
