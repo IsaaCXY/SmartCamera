@@ -5,8 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
 import '../camera_service.dart';
-import '../../analysis/presentation/analysis_service.dart';
-import '../../../settings/domain/app_settings.dart';
+import '../../../analysis/presentation/analysis_service.dart';
 import '../../../settings/presentation/settings_service.dart';
 
 class CameraPage extends StatefulWidget {
@@ -38,9 +37,9 @@ class _CameraPageState extends State<CameraPage> {
     _frameTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) async {
       final cameraService = context.read<CameraService>();
       final analysisService = context.read<AnalysisService>();
-      final settings = context.read<SettingsService>().settings;
+      final settingsService = context.read<SettingsService>();
 
-      if (!settings.enableAutoAnalysis) return;
+      if (!settingsService.settings.enableAutoAnalysis) return;
 
       // Capture current frame
       final currentFrame = await cameraService.captureFrameForAnalysis();
@@ -104,7 +103,6 @@ class _CameraPageState extends State<CameraPage> {
     return Consumer<AnalysisService>(
       builder: (context, analysisService, child) {
         final result = analysisService.currentResult;
-        final settings = context.watch<SettingsService>().settings;
 
         if (result == null) {
           return const SizedBox.shrink();
