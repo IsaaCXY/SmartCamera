@@ -21,8 +21,21 @@ jobs:
           channel: 'stable'
           cache: true
       
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
+      
       - name: Get dependencies
         run: flutter pub get
+        working-directory: ./smart_cam
+      
+      - name: Clean build
+        run: cd android && ./gradlew clean && cd ..
         working-directory: ./smart_cam
       
       - name: Analyze code
@@ -72,12 +85,21 @@ jobs:
           channel: 'stable'
           cache: true
       
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v3
+      
       - name: Get dependencies
         run: flutter pub get
         working-directory: ./smart_cam
       
       - name: Check formatting
-        run: dart format --set-exit-if-changed src/
+        run: dart format --set-exit-if-changed lib/
         working-directory: ./smart_cam
       
       - name: Analyze for issues
