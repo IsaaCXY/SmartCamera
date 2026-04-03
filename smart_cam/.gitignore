@@ -6,37 +6,75 @@
 .DS_Store
 .atom/
 .buildlog/
-.idea/
+.history
 .svn/
-coverage/
-.vscode/
-*~
-.gradle/
-local.properties
+migrate_working_dir/
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Flutter/Dart/Pub
+app.iml
 .pub-cache/
 .pub/
 /build/
 /pubspec.lock
+**/doc/api/
 
-# Symbolication related
-app.*.symbols
+# iOS/XCode
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.moved-aside
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/*profile*/
+**/ios/.symlinks/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
 
-# Obfuscation related
-app.*.map.json
+# Android
+**/android/**/gradle-wrapper.jar
+**/android/.gradle
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/**/GeneratedPluginRegistrant.kt
+**/android/key.properties
+**/android/**/*.keystore
+!**/android/gradle/wrapper/gradle-wrapper.jar
+!**/android/gradlew
+!**/android/gradlew.bat
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# Coverage
+coverage/
 
-# API Keys (keep example, ignore actual)
-**/api_keys.dart
-!.example.api_keys.dart
+# Environment
+.env
+.env.*
+!.env.example
+
+# Secrets
+*.pem
+*.key
+**/secrets/
+
+# Codespaces
+.devcontainer/.cache/
