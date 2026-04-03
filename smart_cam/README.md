@@ -1,137 +1,170 @@
-# Smart Camera App
+# Smart Cam - AI Camera Application
 
-A Flutter-based smart camera application with AI-powered shooting suggestions and editing recommendations.
+[![Flutter](https://img.shields.io/badge/Flutter-3.19+-blue.svg)](https://flutter.dev)
+[![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Features
+## 📖 Project Description
 
-- **Real-time Scene Analysis**: Automatically analyzes the scene in the viewfinder to provide shooting suggestions
-- **AI-Powered Recommendations**: Get camera parameter suggestions and filter recommendations from large language models
-- **Multi-Provider Support**: Flexible backend supporting OpenAI, Anthropic, Azure, and custom endpoints
-- **Stability Detection**: Only triggers analysis when the scene is stable to avoid unnecessary API calls
-- **Cross-Platform**: Built with Flutter for iOS and Android support (Android priority)
+**Smart Cam** is an AI-powered smart camera application that provides real-time shooting suggestions and composition guidance through large language model analysis.
 
-## Architecture
+### ✨ Core Features
 
-The app follows a clean architecture pattern with clear separation of concerns:
+- **Real-time Scene Analysis**: Automatically detects scene stability and triggers AI analysis
+- **Shooting Suggestions**: Provides exposure, focus, white balance suggestions and composition guidance
+- **Multi-model Support**: Flexibly integrates GPT-4o, Claude, Qwen-VL and other LLM providers
+- **Smart Throttling**: Re-analyzes only when scenes change significantly, saving data and battery
+- **Photo Editing Recommendations**: Provides post-processing parameters and filter suggestions after taking photos
+- **Cross-platform Architecture**: Android first, with iOS expansion capability
+
+### 🎯 Use Cases
+
+- Photography beginners learning professional shooting techniques
+- Quick optimal shooting parameters while traveling
+- Optimization suggestions for specific scenes (portrait, landscape, food)
+- Post-processing parameter reference
+
+---
+
+## 🛠️ Local Development Environment Requirements
+
+### System Requirements
+
+| OS | Minimum Version | Recommended Version |
+|---------|---------|---------|
+| Windows | 10 (64-bit) | 11 (64-bit) |
+| macOS | 10.15 (Catalina) | 12+ (Monterey/Ventura) |
+| Linux | Ubuntu 18.04+ | Ubuntu 22.04+ |
+
+### Software Dependencies
+
+| Tool | Minimum Version | Recommended Version | Purpose |
+|-----|---------|---------|------|
+| **Flutter SDK** | 3.19.0 | 3.22.0+ | Cross-platform framework |
+| **Dart SDK** | 3.3.0 | 3.4.0+ | Programming language |
+| **Android Studio** | Hedgehog (2023.1.1) | Koala (2024.1.2)+ | IDE & Emulator |
+| **Android SDK** | API 21 | API 34 | Development toolkit |
+| **Gradle** | 8.0 | 8.7+ | Build tool |
+| **Git** | 2.x | Latest stable | Version control |
+
+---
+
+## 📁 Project Structure
 
 ```
-lib/
-├── core/                    # Core utilities and configuration
-│   ├── config/             # App configuration
-│   ├── constants/          # Constants
-│   └── utils/              # Utilities (logger, etc.)
-├── features/               # Feature modules
-│   ├── camera/            # Camera functionality
-│   │   ├── data/         # Data layer
-│   │   ├── domain/       # Business logic
-│   │   └── presentation/ # UI and state management
-│   ├── analysis/         # AI analysis feature
-│   │   ├── data/         # API repository
-│   │   ├── domain/       # Models and interfaces
-│   │   └── presentation/ # Service and UI
-│   └── settings/         # Settings management
-└── main.dart            # App entry point
+smart_cam/
+├── android/              # Android platform specific files
+│   ├── app/
+│   │   ├── build.gradle
+│   │   └── src/main/
+│   │       ├── AndroidManifest.xml
+│   │       ├── kotlin/   # Native Kotlin code
+│   │       └── res/      # Android resources
+│   ├── build.gradle
+│   ├── settings.gradle
+│   └── gradle.properties
+├── ios/                  # iOS platform specific files
+│   └── Runner/
+├── src/                  # Dart source code
+│   ├── main.dart         # Application entry point
+│   ├── core/             # Core utilities and config
+│   │   ├── config/
+│   │   └── utils/
+│   └── features/         # Feature modules
+│       ├── analysis/     # AI analysis feature
+│       ├── camera/       # Camera functionality
+│       └── settings/     # App settings
+├── test/                 # Test files
+│   ├── unit/             # Unit tests
+│   └── widget/           # Widget tests
+├── assets/               # Static assets
+│   ├── images/
+│   └── fonts/
+├── pubspec.yaml          # Flutter dependencies
+└── analysis_options.yaml # Dart analyzer configuration
 ```
 
-## Getting Started
+---
 
-### Prerequisites
+## 🚀 Getting Started
 
-- Flutter SDK 3.5.0 or higher
-- Android Studio / Xcode for platform development
-- API key from your preferred AI provider (OpenAI, Anthropic, etc.)
+### 1. Clone the repository
 
-### Installation
-
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   flutter pub get
-   ```
-
-3. Configure your API key in the app settings
-
-4. Run the app:
-   ```bash
-   flutter run
-   ```
-
-## Configuration
-
-### AI Provider Setup
-
-The app supports multiple AI providers. Configure in Settings > AI Provider:
-
-- **OpenAI**: Use GPT-4 Vision or similar
-- **Anthropic**: Use Claude with vision capabilities
-- **Azure OpenAI**: Enterprise deployment
-- **Custom**: Your own endpoint
-
-### API Format
-
-The backend should accept POST requests with:
-```json
-{
-  "image": "<base64_encoded_image>",
-  "task": "camera_advice",
-  "return_format": {
-    "shooting_advice": "string",
-    "camera_params": "object",
-    "filter_suggestions": "array",
-    "edit_params": "object"
-  }
-}
+```bash
+git clone <repository-url>
+cd smart_cam
 ```
 
-Expected response:
-```json
-{
-  "shooting_advice": "Move slightly to the left for better composition",
-  "camera_params": {
-    "iso": "100",
-    "exposure": "-0.3",
-    "focus": "center"
-  },
-  "filter_suggestions": ["Warm", "Vivid", "Portrait"],
-  "edit_params": {
-    "brightness": "+10",
-    "contrast": "+5",
-    "saturation": "+8"
-  }
-}
+### 2. Install dependencies
+
+```bash
+flutter pub get
 ```
 
-## Key Components
+### 3. Run the application
 
-### CameraService
-Manages camera initialization, preview, and image capture. Handles frame comparison for stability detection.
+```bash
+flutter run
+```
 
-### AnalysisService
-Orchestrates the AI analysis workflow:
-- Monitors frame stability
-- Throttles API calls with cooldown period
-- Manages analysis state and results
+---
 
-### AnalysisApiRepository
-Communicates with the backend AI service. Supports multiple providers through a unified interface.
+## 🧪 Running Tests
 
-### Stability Detection
-The app uses a simple frame-difference algorithm to detect scene stability:
-1. Captures frames at 500ms intervals
-2. Calculates pixel difference between consecutive frames
-3. Triggers analysis only when scene is stable for N consecutive frames
-4. Resets when significant scene change is detected
+```bash
+# Run all tests
+flutter test
 
-## Future Enhancements
+# Run unit tests
+flutter test test/unit/
 
-- [ ] Image resizing before API upload
-- [ ] Persistent settings storage
-- [ ] Grid lines overlay on camera preview
-- [ ] Photo gallery with edit history
-- [ ] Direct integration with photo editing apps
-- [ ] On-device ML for basic scene detection
-- [ ] Batch analysis for burst mode
+# Run widget tests
+flutter test test/widget/
+```
 
-## License
+---
 
-MIT License
+## 📦 Building
+
+### Android APK
+
+```bash
+flutter build apk --release
+```
+
+### Android App Bundle
+
+```bash
+flutter build appbundle --release
+```
+
+---
+
+## 📝 Additional Documentation
+
+- [Backend API](BACKEND_API.md) - API documentation
+- [Android Setup](ANDROID_SETUP.md) - Detailed Android setup guide
+- [Implementation Summary](IMPLEMENTATION_SUMMARY.md) - Technical implementation details
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- Flutter team for the amazing framework
+- All contributors to this project

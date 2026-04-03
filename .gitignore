@@ -1,38 +1,47 @@
 ```
 # Dependencies
-node_modules/
+.dart_tool/
+.build/
+.pub/
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/build/
+
+# Flutter
+**/doc/api/
+**/logs/
+
+# Build
+build/
+bin/
 
 # Environment
 .env
 .env.local
-.env.*
-
-# Editors
-.vscode/
-.idea/
+*.env.*
 
 # Logs
 *.log
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-venv/
-.venv/
-.env
-.env.local
-.env.*
-.pytest_cache/
-.mypy_cache/
-.coverage
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
 coverage/
 htmlcov/
-
-# Build artifacts
-dist/
-build/
-*.egg-info/
+.coverage
 ```
