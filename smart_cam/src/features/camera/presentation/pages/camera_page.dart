@@ -6,8 +6,8 @@ import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
 import '../camera_service.dart';
 import '../../analysis/presentation/analysis_service.dart';
-import '../../settings/domain/app_settings.dart';
-import '../../settings/presentation/settings_service.dart';
+import '../../../settings/domain/app_settings.dart';
+import '../../../settings/presentation/settings_service.dart';
 
 class CameraPage extends StatefulWidget {
   const CameraPage({super.key});
