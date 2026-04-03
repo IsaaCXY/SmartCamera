@@ -1,27 +1,18 @@
 ```
-# Flutter/Dart specific
+# Dependencies
 .dart_tool/
 .packages
-*.dart.js
-*.dart.js.map
-*.part.js
-*.part.js.map
-*.sum
-*.uncheck
-**/doc/api/
+.pub/
+pubspec.lock
 
 # Build outputs
 build/
-**/ios/Flutter/.last_build_id
-
-# Dependencies
-.pub-cache/
-pubspec.lock
+dist/
 
 # Environment
 .env
 .env.local
-.env.*
+*.env.*
 
 # Logs
 *.log
@@ -35,4 +26,22 @@ pubspec.lock
 # OS
 .DS_Store
 Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node
+node_modules/
+
+# Virtual environments
+venv/
+.venv/
 ```
