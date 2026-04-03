@@ -25,7 +25,7 @@
 - 安装 Java JDK 17
 - 配置 Android SDK 和构建工具
 - 安装 VS Code 扩展（Flutter、Dart、GitHub Copilot）
-- 执行 `flutter pub get` 安装依赖
+- 进入 `smart_cam` 目录并执行 `flutter pub get` 安装依赖
 - 运行 `flutter doctor` 验证环境
 
 ### 3. 开始开发
