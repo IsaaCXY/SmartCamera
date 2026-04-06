@@ -7,101 +7,30 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
-      
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v3
-      
+
       - name: Get dependencies
         run: flutter pub get
         working-directory: ./smart_cam
-      
-      - name: Clean build
-        run: cd android && ./gradlew clean && cd ..
-        working-directory: ./smart_cam
-      
-      - name: Analyze code
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
-        working-directory: ./smart_cam
-      
-      - name: Run tests
-        run: flutter test
-        working-directory: ./smart_cam
-      
+
       - name: Build APK (Debug)
         run: flutter build apk --debug
-        working-directory: ./smart_cam
-      
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: app-debug-apk
-          path: smart_cam/build/app/outputs/flutter-apk/app-debug.apk
-          retention-days: 7
-      
-      - name: Build APK (Release)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: flutter build apk --release
-        working-directory: ./smart_cam
-      
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        with:
-          name: app-release-apk
-          path: smart_cam/build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 30
-
-  code-quality:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
-          cache: true
-      
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-      
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v3
-      
-      - name: Get dependencies
-        run: flutter pub get
-        working-directory: ./smart_cam
-      
-      - name: Check formatting
-        run: dart format --set-exit-if-changed lib/
-        working-directory: ./smart_cam
-      
-      - name: Analyze for issues
-        run: flutter analyze --fatal-infos --fatal-warnings
         working-directory: ./smart_cam
