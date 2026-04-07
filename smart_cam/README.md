@@ -10,11 +10,27 @@
 
 ### ✨ Core Features
 
+#### Real-time AI Assistance
 - **Real-time Scene Analysis**: Automatically detects scene stability and triggers AI analysis
 - **Shooting Suggestions**: Provides exposure, focus, white balance suggestions and composition guidance
 - **Multi-model Support**: Flexibly integrates GPT-4o, Claude, Qwen-VL and other LLM providers
 - **Smart Throttling**: Re-analyzes only when scenes change significantly, saving data and battery
 - **Photo Editing Recommendations**: Provides post-processing parameters and filter suggestions after taking photos
+
+#### Photo Management (New in v1.1.0)
+- **Local Photo Storage**: Photos are automatically saved to app storage with metadata
+- **Photo Gallery**: Browse all taken photos in a beautiful grid layout
+- **Photo Details**: View full photo with complete AI analysis results
+- **Thumbnail Generation**: Automatic 200x200 thumbnails for fast browsing
+- **Persistent Metadata**: All photo data persists across app restarts
+
+#### Camera Controls (New in v1.1.0)
+- **Flash Control**: Three modes - Off / Auto / On, default to Off
+- **Quick Gallery Access**: Latest photo thumbnail on camera screen
+- **Camera Settings**: Save camera settings (flash mode, etc.) with each photo
+- **Bug Fixes**: Fixed frequent flash flickering issue
+
+#### Platform Support
 - **Cross-platform Architecture**: Android first, with iOS expansion capability
 
 ### 🎯 Use Cases
@@ -65,15 +81,34 @@ smart_cam/
 │   └── gradle.properties
 ├── ios/                  # iOS platform specific files
 │   └── Runner/
-├── src/                  # Dart source code
+├── lib/                  # Dart source code
 │   ├── main.dart         # Application entry point
 │   ├── core/             # Core utilities and config
 │   │   ├── config/
+│   │   │   └── app_config.dart
 │   │   └── utils/
+│   │       └── logger.dart
 │   └── features/         # Feature modules
 │       ├── analysis/     # AI analysis feature
+│       │   ├── domain/
+│       │   ├── data/
+│       │   └── presentation/
 │       ├── camera/       # Camera functionality
+│       │   └── presentation/
+│       │       ├── camera_service.dart
+│       │       └── pages/
+│       │           └── camera_page.dart
+│       ├── photo/        # Photo management (New)
+│       │   ├── domain/
+│       │   │   └── photo_metadata.dart
+│       │   └── presentation/
+│       │       ├── photo_storage_service.dart
+│       │       └── pages/
+│       │           ├── photo_gallery_page.dart
+│       │           └── photo_detail_page.dart
 │       └── settings/     # App settings
+│           ├── domain/
+│           └── presentation/
 ├── test/                 # Test files
 │   ├── unit/             # Unit tests
 │   └── widget/           # Widget tests
@@ -88,6 +123,13 @@ smart_cam/
 
 ## 🚀 Getting Started
 
+### Prerequisites
+
+Before you begin, ensure you have the following:
+- Flutter SDK installed (3.19.0 or higher)
+- Android Studio or VS Code with Flutter extensions
+- Android SDK and emulator or physical device
+
 ### 1. Clone the repository
 
 ```bash
@@ -95,16 +137,47 @@ git clone <repository-url>
 cd smart_cam
 ```
 
-### 2. Install dependencies
+### 2. Configure Flutter mirror (China users only)
+
+If you're in China, configure Flutter to use mirror servers for faster downloads:
+
+```bash
+export PUB_HOSTED_URL=https://pub.flutter-io.cn
+export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
+```
+
+To make this permanent, add these lines to your `~/.zshrc` or `~/.bashrc`:
+
+```bash
+echo 'export PUB_HOSTED_URL=https://pub.flutter-io.cn' >> ~/.zshrc
+echo 'export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### 3. Install dependencies
 
 ```bash
 flutter pub get
 ```
 
-### 3. Run the application
+### 4. Run the application
 
 ```bash
+# Connect a device or start an emulator
+flutter devices
+
+# Run the app
 flutter run
+```
+
+### 5. Build for release
+
+```bash
+# Android APK
+flutter build apk --release
+
+# Android App Bundle
+flutter build appbundle --release
 ```
 
 ---
@@ -142,6 +215,7 @@ flutter build appbundle --release
 
 ## 📝 Additional Documentation
 
+- [Design Document](../AI_CAMERA_DESIGN.md) - Complete architecture and feature design
 - [Backend API](BACKEND_API.md) - API documentation
 - [Android Setup](ANDROID_SETUP.md) - Detailed Android setup guide
 - [Implementation Summary](IMPLEMENTATION_SUMMARY.md) - Technical implementation details

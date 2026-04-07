@@ -3,14 +3,29 @@ class AppConfig {
   // API Configuration
   static const String apiBaseUrl = 'http://localhost:8000/api';
   static const Duration apiTimeout = Duration(seconds: 10);
-  
+
   // Camera Configuration
-  static const double minStabilityThreshold = 0.85;
-  static const int stabilityCheckFrames = 5;
   static const Duration analysisCooldown = Duration(seconds: 3);
-  
+
+  // Stability Detection Configuration
+  static const double stabilityAlpha = 0.3;  // EMA smoothing factor
+  static const double stabilityThreshold = 0.8;  // Stability threshold
+
+  // Scene Change Detection Configuration
+  static const int sceneChangeWindowSize = 10;  // Window size for sliding window
+  static const double sceneChangeThreshold = 0.3;  // Change threshold
+  static const double sceneChangeTrigger = 0.4;  // Trigger analysis threshold
+
   // Image Configuration
   static const int analysisImageWidth = 640;
   static const int analysisImageHeight = 480;
   static const int analysisImageQuality = 80;
+
+  // Photo Storage Configuration
+  static const int thumbnailSize = 200;
+  static const int thumbnailQuality = 85;
+  static const String photosDirName = 'photos';
+  static const String thumbnailsDirName = 'thumbnails';
+  static const String metadataFileName = 'metadata.json';
+  static const String photoIdPrefix = 'photo';
 }

@@ -12,7 +12,27 @@
 - **CameraService**: Handles initialization, preview, and capture
 - **Frame Analysis**: Captures frames for AI processing
 - **Stability Detection**: Compares consecutive frames to detect scene stability
-- **Photo Capture**: Takes photos and returns file paths
+- **Photo Capture**: Takes photos and integrates with PhotoStorageService
+- **Flash Control**: Three modes (Off/Auto/On), defaults to Off to prevent flickering
+
+### Photo Management Module ✅ (New in v1.1.0)
+- **Domain Layer**:
+  - `PhotoMetadata` model with JSON serialization
+  - Supports AI analysis results and camera settings
+- **Service Layer**:
+  - `PhotoStorageService` for photo persistence
+  - Automatic thumbnail generation (200x200)
+  - JSON metadata storage
+  - CRUD operations for photos
+- **Presentation Layer**:
+  - `PhotoGalleryPage` - Grid layout with 3 columns
+  - `PhotoDetailPage` - Full photo view with AI results
+  - Thumbnail widget on camera screen
+- **Storage**:
+  - Photos saved to app documents directory
+  - Thumbnails in separate subdirectory
+  - Metadata persisted in JSON file
+  - Survives app restarts
 
 ### Analysis Module ✅
 - **Domain Layer**: 
@@ -31,11 +51,24 @@
 - **SettingsPage UI**: Provider selection, API key input, toggles
 
 ### UI Components ✅
-- **CameraPage**: 
+- **CameraPage**:
   - Live camera preview
   - AI suggestions overlay (shooting advice, params, filters)
-  - Shutter button and settings navigation
-  - Post-capture result dialog
+  - Flash control button (cycles Off/Auto/On)
+  - Gallery thumbnail button (shows latest photo)
+  - Shutter button with photo result dialog
+  - Settings navigation
+- **PhotoGalleryPage**:
+  - 3-column grid layout
+  - Photo thumbnails with timestamps
+  - AI analysis indicator (blue star)
+  - Empty state placeholder
+- **PhotoDetailPage**:
+  - Full-screen photo with zoom support
+  - Photo metadata (timestamp, ID, camera settings)
+  - Complete AI analysis results display
+  - Delete functionality with confirmation
+  - Share button (placeholder)
 - **SettingsPage**:
   - AI provider dropdown (OpenAI, Anthropic, Azure, Custom)
   - API key input field
@@ -70,6 +103,7 @@ Each feature has a service class extending `ChangeNotifier`:
 - `CameraService`: Camera state and operations
 - `AnalysisService`: Analysis state and workflow
 - `SettingsService`: App preferences
+- `PhotoStorageService`: Photo management (New)
 
 **Benefit**: Clear separation of concerns, testable, reusable.
 
@@ -82,6 +116,36 @@ AI suggestions displayed as semi-transparent overlay:
 
 **Benefit**: Real-time feedback without leaving camera view.
 
+### 5. Photo Storage Strategy (New)
+Photos stored in app documents directory:
+- Original images in `/photos/` subdirectory
+- Thumbnails in `/thumbnails/` subdirectory (200x200, JPEG 85%)
+- Metadata in `/metadata.json` file
+- Photo ID format: `photo_YYYYMMDD_HHMMSS_seq`
+
+**Benefit**: Fast browsing with thumbnails, persistent metadata, easy to backup/migrate.
+
+### 6. Flash Control Implementation (New)
+- Defaults to `FlashMode.off` to prevent flickering
+- Cycles through Off → Auto → On → Off
+- Flash mode saved with photo metadata
+- Visual feedback with appropriate icons
+
+**Benefit**: User control over flash, prevents annoying flickering, consistent behavior.
+
+### 7. String Interpolation Safety (New)
+Always use `${}` for variable boundaries in string interpolation:
+
+```dart
+// ❌ Wrong: $dateStr_ parsed as variable name
+'${prefix}_$dateStr_${sequence}'
+
+// ✅ Correct: ${dateStr} explicitly bounded
+'${prefix}_${dateStr}_${sequence}'
+```
+
+**Benefit**: Avoids subtle bugs with variable names containing underscores.
+
 ## Current Limitations (TODO)
 
 ### Image Processing
@@ -90,13 +154,13 @@ AI suggestions displayed as semi-transparent overlay:
 - [ ] Convert YUV to RGB properly
 
 ### Persistence
+- [x] Cache analysis results locally (linked to photos)
+- [x] Store photo history with metadata
 - [ ] Save settings with `shared_preferences`
-- [ ] Cache analysis results locally
-- [ ] Store photo history
 
 ### Camera Features
+- [x] Flash control (Off/Auto/On modes)
 - [ ] Grid lines overlay (rule of thirds)
-- [ ] Flash control
 - [ ] Focus point selection
 - [ ] Exposure compensation slider
 
@@ -152,17 +216,25 @@ smart_cam/
 │   └── features/
 │       ├── camera/
 │       │   ├── presentation/
-│       │   │   ├── camera_service.dart   # Camera logic
+│       │   │   ├── camera_service.dart   # Camera logic + flash control
 │       │   │   └── pages/
-│       │   │       └── camera_page.dart  # Main UI
+│       │   │       └── camera_page.dart  # Main UI + thumbnail
 │       ├── analysis/
 │       │   ├── domain/
-│       │   │   ├── analysis_result.dart  # Data model
+│       │   │   ├── analysis_result.dart  # Data model + toJson
 │       │   │   └── analysis_repository.dart  # Interface
 │       │   ├── data/
 │       │   │   └── analysis_api_repository.dart  # API impl
 │       │   └── presentation/
 │       │       └── analysis_service.dart # Business logic
+│       ├── photo/                        # New in v1.1.0
+│       │   ├── domain/
+│       │   │   └── photo_metadata.dart   # Photo model + JSON
+│       │   └── presentation/
+│       │       ├── photo_storage_service.dart  # Storage logic
+│       │       └── pages/
+│       │           ├── photo_gallery_page.dart   # Grid view
+│       │           └── photo_detail_page.dart    # Detail view
 │       └── settings/
 │           ├── domain/
 │           │   └── app_settings.dart     # Settings model
@@ -174,7 +246,8 @@ smart_cam/
 ├── pubspec.yaml                          # Dependencies
 ├── README.md                             # User documentation
 ├── ANDROID_SETUP.md                      # Setup guide
-└── BACKEND_API.md                        # API specification
+├── BACKEND_API.md                        # API specification
+└── IMPLEMENTATION_SUMMARY.md             # This file
 ```
 
 ## Code Quality Highlights
@@ -218,3 +291,49 @@ void main() {
 - Debouncing: Cooldown prevents rapid successive calls
 - Async operations: Non-blocking UI during network requests
 - Memory management: Dispose controllers and listeners properly
+- Thumbnail generation: Asynchronous, non-blocking (New)
+
+---
+
+## Version History
+
+### v1.1.0 (2026-04-07) - Photo Management & Flash Control
+**New Features**:
+- Photo local storage with automatic thumbnail generation
+- Photo gallery with grid layout (3 columns)
+- Photo detail page with full AI analysis results
+- Flash control (Off/Auto/On) with visual feedback
+- Gallery thumbnail on camera screen
+- Photo metadata persistence (JSON format)
+
+**Bug Fixes**:
+- Fixed frequent flash flickering issue (default to Off mode)
+- Fixed string interpolation bugs with variable names
+
+**Improvements**:
+- Enhanced camera service with PhotoStorageService integration
+- Better error handling and user feedback
+- Improved documentation and usage guide
+
+**Files Added**:
+- `lib/features/photo/domain/photo_metadata.dart`
+- `lib/features/photo/presentation/photo_storage_service.dart`
+- `lib/features/photo/presentation/pages/photo_gallery_page.dart`
+- `lib/features/photo/presentation/pages/photo_detail_page.dart`
+
+**Files Modified**:
+- `lib/features/camera/presentation/camera_service.dart` - Added flash control
+- `lib/features/camera/presentation/pages/camera_page.dart` - Added gallery thumbnail
+- `lib/main.dart` - Registered PhotoStorageService and routes
+- `lib/core/config/app_config.dart` - Added photo storage constants
+- `lib/features/analysis/domain/analysis_result.dart` - Added toJson method
+
+### v1.0.0 (2024-01-XX) - Initial MVP Release
+**Core Features**:
+- Real-time camera preview with AI suggestions
+- Scene stability detection
+- Multi-provider LLM integration
+- Settings management
+- Basic photo capture
+
+---

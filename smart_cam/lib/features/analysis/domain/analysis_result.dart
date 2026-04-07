@@ -21,6 +21,16 @@ class AnalysisResult {
     );
   }
 
+  /// Convert AnalysisResult to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'shooting_advice': shootingAdvice,
+      'camera_params': cameraParams,
+      'filter_suggestions': filterSuggestions,
+      'edit_params': editParams,
+    };
+  }
+
   @override
   String toString() {
     return 'AnalysisResult(advice: $shootingAdvice, params: $cameraParams)';

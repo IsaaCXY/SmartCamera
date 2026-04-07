@@ -4,15 +4,20 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image/image.dart' as img;
 import '../../../core/config/app_config.dart';
 import '../../../core/utils/logger.dart';
+import '../../photo/domain/photo_metadata.dart';
+import '../../photo/presentation/photo_storage_service.dart';
+import '../../analysis/domain/analysis_result.dart';
 
 class CameraService extends ChangeNotifier {
   CameraController? _controller;
   List<CameraDescription>? _cameras;
-  
+
   bool _isInitialized = false;
   bool _isProcessing = false;
+  FlashMode _flashMode = FlashMode.off;
 
   /// Whether camera is ready to use.
   bool get isInitialized => _isInitialized;
@@ -22,6 +27,9 @@ class CameraService extends ChangeNotifier {
 
   /// Available cameras.
   List<CameraDescription>? get cameras => _cameras;
+
+  /// Current flash mode.
+  FlashMode get flashMode => _flashMode;
 
   /// Initialize camera with back camera by default.
   Future<void> initialize() async {
@@ -46,8 +54,13 @@ class CameraService extends ChangeNotifier {
       );
 
       await _controller!.initialize();
+
+      // Set default flash mode to off
+      await _controller!.setFlashMode(FlashMode.off);
+      _flashMode = FlashMode.off;
+
       _isInitialized = true;
-      
+
       AppLogger.i('Camera initialized successfully', 'CameraService');
       notifyListeners();
     } catch (e) {
@@ -86,27 +99,101 @@ class CameraService extends ChangeNotifier {
   }
 
   /// Calculate difference between consecutive frames.
-  /// Simple implementation using histogram comparison.
+  /// Decodes and compares images at a standardized resolution.
+  /// Returns a value between 0.0 (identical) and 1.0 (completely different).
   double calculateFrameDifference(Uint8List current, Uint8List previous) {
-    if (current.length != previous.length) {
-      return 1.0; // Maximum difference if sizes don't match
-    }
+    try {
+      // Decode images
+      img.Image? currentImage = img.decodeImage(current);
+      img.Image? previousImage = img.decodeImage(previous);
 
-    int diffSum = 0;
-    final sampleStep = current.length ~/ 1000; // Sample 1000 points
-    
-    for (int i = 0; i < current.length; i += sampleStep) {
-      diffSum += (current[i] - previous[i]).abs();
+      if (currentImage == null || previousImage == null) {
+        AppLogger.w('Failed to decode one or both images', 'CameraService');
+        return 1.0; // Return maximum difference if decoding fails
+      }
+
+      // Standardize size for comparison (32x32 is sufficient for motion detection)
+      const int compareSize = 32;
+
+      // Resize both images to the same size
+      img.Image currentResized = img.copyResize(
+        currentImage,
+        width: compareSize,
+        height: compareSize,
+        interpolation: img.Interpolation.linear,
+      );
+
+      img.Image previousResized = img.copyResize(
+        previousImage,
+        width: compareSize,
+        height: compareSize,
+        interpolation: img.Interpolation.linear,
+      );
+
+      // Calculate pixel-wise difference
+      int totalPixelDiff = 0;
+      int totalPixels = compareSize * compareSize;
+
+      for (int y = 0; y < compareSize; y++) {
+        for (int x = 0; x < compareSize; x++) {
+          final currentPixel = currentResized.getPixel(x, y);
+          final previousPixel = previousResized.getPixel(x, y);
+
+          // Extract RGB components from Pixel object
+          final currentR = currentPixel.r.toInt();
+          final currentG = currentPixel.g.toInt();
+          final currentB = currentPixel.b.toInt();
+
+          final previousR = previousPixel.r.toInt();
+          final previousG = previousPixel.g.toInt();
+          final previousB = previousPixel.b.toInt();
+
+          // Calculate absolute difference for each channel
+          final rDiff = (currentR - previousR).abs();
+          final gDiff = (currentG - previousG).abs();
+          final bDiff = (currentB - previousB).abs();
+
+          // Sum differences
+          totalPixelDiff += rDiff + gDiff + bDiff;
+        }
+      }
+
+      // Normalize: maximum possible difference is 255 * 3 channels per pixel
+      final maxPossibleDiff = totalPixels * 255 * 3;
+      final normalizedDiff = totalPixelDiff / maxPossibleDiff;
+
+      AppLogger.d('Frame difference: ${normalizedDiff.toStringAsFixed(4)}', 'CameraService');
+      return normalizedDiff.clamp(0.0, 1.0);
+
+    } catch (e) {
+      AppLogger.e('Error calculating frame difference', 'CameraService', e);
+      return 1.0; // Return maximum difference on error
     }
-    
-    final avgDiff = diffSum / (current.length ~/ sampleStep);
-    final normalizedDiff = avgDiff / 255.0; // Normalize to 0-1
-    
-    return normalizedDiff.clamp(0.0, 1.0);
   }
 
-  /// Take a photo and save to file.
-  Future<XFile?> takePhoto() async {
+  /// Set flash mode.
+  Future<void> setFlashMode(FlashMode mode) async {
+    if (_controller == null) {
+      AppLogger.w('Cannot set flash mode: camera not initialized', 'CameraService');
+      return;
+    }
+
+    try {
+      await _controller!.setFlashMode(mode);
+      _flashMode = mode;
+      AppLogger.i('Flash mode set to $mode', 'CameraService');
+      notifyListeners();
+    } catch (e) {
+      AppLogger.e('Failed to set flash mode', 'CameraService', e);
+      rethrow;
+    }
+  }
+
+  /// Take a photo and save to storage service.
+  Future<PhotoMetadata?> takePhoto(
+    PhotoStorageService storageService, {
+    AnalysisResult? analysisResult,
+  }) async {
     if (!_isInitialized || _controller == null) {
       return null;
     }
@@ -114,8 +201,18 @@ class CameraService extends ChangeNotifier {
     try {
       AppLogger.i('Taking photo...', 'CameraService');
       final photo = await _controller!.takePicture();
-      AppLogger.i('Photo saved: ${photo.path}', 'CameraService');
-      return photo;
+      AppLogger.i('Photo captured: ${photo.path}', 'CameraService');
+
+      // Save photo using storage service
+      final metadata = await storageService.savePhoto(
+        photo,
+        analysisResult,
+        cameraSettings: {
+          'flash_mode': _flashMode.toString(),
+        },
+      );
+
+      return metadata;
     } catch (e) {
       AppLogger.e('Photo capture failed', 'CameraService', e);
       return null;

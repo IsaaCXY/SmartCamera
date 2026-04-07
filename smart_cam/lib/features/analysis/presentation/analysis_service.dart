@@ -1,5 +1,5 @@
 /// Service for analyzing camera frames and providing AI suggestions.
-/// Handles stability detection and throttling of API calls.
+/// Handles API calls and analysis results.
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
@@ -14,10 +14,6 @@ class AnalysisService extends ChangeNotifier {
   AnalysisResult? _currentResult;
   bool _isAnalyzing = false;
   DateTime? _lastAnalysisTime;
-  Timer? _stabilityTimer;
-  
-  // Stability detection state
-  List<double> _frameDifferences = [];
 
   AnalysisService({required AnalysisRepository repository})
       : _repository = repository;
@@ -27,38 +23,6 @@ class AnalysisService extends ChangeNotifier {
 
   /// Whether analysis is currently in progress.
   bool get isAnalyzing => _isAnalyzing;
-
-  /// Check if scene is stable enough for analysis.
-  /// Returns true if the scene has been stable for N frames.
-  bool checkStability(double currentDifference) {
-    _frameDifferences.add(currentDifference);
-    
-    // Keep only last N frames
-    if (_frameDifferences.length > AppConfig.stabilityCheckFrames) {
-      _frameDifferences.removeAt(0);
-    }
-
-    // Need at least N frames to determine stability
-    if (_frameDifferences.length < AppConfig.stabilityCheckFrames) {
-      return false;
-    }
-
-    // Calculate average difference
-    final avgDifference = _frameDifferences.reduce((a, b) => a + b) / 
-        _frameDifferences.length;
-
-    // Stable if average difference is below threshold
-    final isStable = avgDifference < (1 - AppConfig.minStabilityThreshold);
-    
-    AppLogger.d('Stability check: avg=$avgDifference, stable=$isStable', 'AnalysisService');
-    return isStable;
-  }
-
-  /// Reset stability tracking (call when scene changes significantly).
-  void resetStability() {
-    _frameDifferences.clear();
-    AppLogger.d('Stability reset', 'AnalysisService');
-  }
 
   /// Analyze current frame if conditions are met.
   /// Returns true if analysis was started.
@@ -86,7 +50,7 @@ class AnalysisService extends ChangeNotifier {
       final result = await _repository.analyzeImage(imageData);
       _currentResult = result;
       _lastAnalysisTime = DateTime.now();
-      
+
       AppLogger.i('Analysis completed successfully', 'AnalysisService');
       notifyListeners();
       return true;
@@ -103,11 +67,5 @@ class AnalysisService extends ChangeNotifier {
   void clearResult() {
     _currentResult = null;
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _stabilityTimer?.cancel();
-    super.dispose();
   }
 }

@@ -39,7 +39,7 @@
 │                                 │
 │         [分析状态指示器]          │
 │                                 │
-│      [相册]    [快门]    [视频]   │
+│   [闪光灯] [图库] [快门] [更多]   │
 └─────────────────────────────────┘
 ```
 
@@ -47,7 +47,11 @@
 - **相机预览区**: 全屏显示实时画面
 - **建议覆盖层**: 半透明浮层，显示拍摄参数和建议文字
 - **分析状态指示器**: 显示"检测中"/"稳定"/"分析中"/"完成"状态
-- **控制按钮**: 快门、相册、模式切换
+- **控制按钮**:
+  - **闪光灯**: 循环切换 关闭/自动/开启，默认关闭
+  - **图库**: 显示最近照片缩略图，点击进入图库页面
+  - **快门**: 拍照并保存到本地存储
+  - **设置**: 进入设置页面
 
 #### 2.1.2 设置页 (Settings Screen)
 ```
@@ -79,6 +83,8 @@
 
 ### 2.2 用户流程
 
+#### 2.2.1 拍照和分析流程
+
 ```
 启动应用
    ↓
@@ -96,13 +102,47 @@
    ↓否
 用户点击快门
    ↓
-拍照并保存
+拍照并保存到本地存储
+   ├─ 生成缩略图 (200x200)
+   ├─ 保存元数据 (JSON)
+   └─ 关联 AI 分析结果
    ↓
-调用大模型获取修图建议
+显示拍摄成功对话框
+   ├─ 显示照片 ID 和时间
+   └─ 显示 AI 修图建议
    ↓
-显示修图参数和滤镜推荐
+用户选择
+   ├─ [OK] → 返回拍照页
+   └─ [查看照片] → 进入照片详情页
+```
+
+#### 2.2.2 照片查看流程
+
+```
+从拍照页点击图库缩略图
    ↓
-[可选] 打开编辑器或保存
+进入照片列表页
+   ├─ 网格布局展示所有照片
+   ├─ 每张照片显示缩略图和时间
+   └─ 有 AI 分析的照片显示标记
+   ↓
+用户点击照片
+   ↓
+进入照片详情页
+   ├─ 全屏显示照片 (支持缩放)
+   ├─ 显示拍摄信息 (时间、参数)
+   ├─ 显示完整的 AI 分析结果
+   │   ├─ 💡 拍摄建议
+   │   ├─ 📷 相机参数
+   │   ├─ 🎨 滤镜建议
+   │   └─ 🔧 修图参数
+   └─ 操作按钮
+       ├─ [分享] - 即将推出
+       └─ [删除] - 删除照片和元数据
+   ↓
+用户操作
+   ├─ [返回] → 回到列表页
+   └─ [删除] → 确认后删除并返回
 ```
 
 ---
@@ -115,12 +155,12 @@
 |------|---------|------|------|
 | **框架** | Flutter | 3.19+ | 跨平台 UI 框架 |
 | **状态管理** | Provider | 6.1+ | 轻量级响应式状态管理 |
-| **相机引擎** | camera_android | 0.10.9+ | Android CameraX 封装 |
-| **图像预处理** | image_picker | 1.0.7+ | 截图和图片选择 |
+| **相机引擎** | camera | 0.10.5+ | 相机功能封装 |
+| **图像处理** | image | 4.1.7+ | 缩略图生成和图像处理 |
+| **存储路径** | path_provider | 2.1.2+ | 获取应用文档目录 |
+| **路径处理** | path | 1.8.3+ | 文件路径操作 |
 | **HTTP 客户端** | http | 1.2.0+ | API 请求 |
-| **本地存储** | shared_preferences | 2.2.2+ | 配置持久化 |
-| **日志系统** | logger | 2.0.2+ | 结构化日志输出 |
-| **JSON 处理** | json_annotation | 4.8.1+ | JSON 序列化 |
+| **日志系统** | logger | 2.2.0+ | 结构化日志输出 |
 
 ### 3.2 后端技术栈 (参考实现)
 
@@ -150,23 +190,25 @@
 ┌─────────────────────────────────────────────────────────┐
 │                      Presentation Layer                  │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐      │
-│  │ CameraScreen│  │SettingsScreen│  │ ResultScreen│      │
+│  │ CameraScreen│  │SettingsScreen│  │PhotoGalleryPage│   │
+│  │             │  │              │  │PhotoDetailPage│    │
 │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘      │
 │         │                │                │              │
 │  ┌──────▼────────────────▼────────────────▼──────┐      │
 │  │              State Management (Provider)       │      │
-│  │  - CameraState  - SettingsState  - AnalysisState│    │
+│  │  - CameraState  - AnalysisState                │      │
+│  │  - SettingsState  - PhotoStorageState          │      │
 │  └─────────────────────────────────────────────────┘      │
 └─────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────┐
 │                      Business Logic Layer                │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐      │
-│  │CameraService│  │AnalysisService│ │ConfigService│      │
+│  │CameraService│  │AnalysisService│ │PhotoStorageService││
 │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘      │
 │         │                │                │              │
 │  ┌──────▼──────┐  ┌──────▼──────┐  ┌──────▼──────┐      │
-│  │StabilityDetector│ │APIAdapter │  │StorageManager│     │
+│  │StabilityDetector│ │APIAdapter │  │ThumbnailGen │      │
 │  └─────────────┘  └──────┬──────┘  └─────────────┘      │
 │                          │                               │
 │                 ┌────────▼────────┐                      │
@@ -183,6 +225,7 @@
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐      │
 │  │  Android    │  │    iOS      │  │   Web       │      │
 │  │  (CameraX)  │  │ (AVFoundation)│  │ (getUserMedia)│   │
+│  │  FlashMode  │  │  FlashMode  │  │              │      │
 │  └─────────────┘  └─────────────┘  └─────────────┘      │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -209,44 +252,41 @@
 ```
 lib/
 ├── main.dart                     # 应用入口
-├── app.dart                      # 应用配置和路由
-├── config/
-│   ├── constants.dart            # 常量定义
-│   ├── theme.dart                # 主题配置
-│   └── routes.dart               # 路由配置
-├── models/
-│   ├── analysis_result.dart      # 分析结果数据模型
-│   ├── camera_params.dart        # 相机参数模型
-│   ├── settings.dart             # 设置数据模型
-│   └── api_config.dart           # API 配置模型
-├── services/
-│   ├── camera_service.dart       # 相机服务
-│   ├── analysis_service.dart     # 分析服务 (核心)
-│   ├── config_service.dart       # 配置服务
-│   └── storage_service.dart      # 存储服务
-├── providers/
-│   ├── camera_provider.dart      # 相机状态管理
-│   ├── analysis_provider.dart    # 分析状态管理
-│   └── settings_provider.dart    # 设置状态管理
-├── screens/
-│   ├── camera_screen.dart        # 拍照页
-│   ├── settings_screen.dart      # 设置页
-│   └── result_screen.dart        # 结果页
-├── widgets/
-│   ├── camera_preview.dart       # 相机预览组件
-│   ├── suggestion_overlay.dart   # 建议覆盖层
-│   ├── status_indicator.dart     # 状态指示器
-│   └── setting_tile.dart         # 设置项组件
-├── utils/
-│   ├── logger.dart               # 日志工具
-│   ├── image_utils.dart          # 图像处理工具
-│   └── stability_detector.dart   # 稳定性检测算法
-└── api/
-    ├── api_client.dart           # HTTP 客户端
-    ├── api_adapter.dart          # API 适配器 (多模型支持)
-    └── models/
-        ├── request.dart          # 请求模型
-        └── response.dart         # 响应模型
+├── core/
+│   ├── config/
+│   │   └── app_config.dart       # 应用配置常量
+│   └── utils/
+│       └── logger.dart           # 日志工具
+├── features/
+│   ├── camera/
+│   │   ├── presentation/
+│   │   │   ├── camera_service.dart      # 相机服务
+│   │   │   └── pages/
+│   │   │       └── camera_page.dart     # 拍照页
+│   ├── analysis/
+│   │   ├── domain/
+│   │   │   ├── analysis_result.dart     # 分析结果模型
+│   │   │   └── analysis_repository.dart # 分析仓库接口
+│   │   ├── data/
+│   │   │   └── analysis_api_repository.dart # API 分析实现
+│   │   └── presentation/
+│   │       └── analysis_service.dart    # 分析服务
+│   ├── photo/                     # 照片管理模块 (新增)
+│   │   ├── domain/
+│   │   │   └── photo_metadata.dart      # 照片元数据模型
+│   │   └── presentation/
+│   │       ├── photo_storage_service.dart # 照片存储服务
+│   │       └── pages/
+│   │           ├── photo_gallery_page.dart  # 照片列表页
+│   │           └── photo_detail_page.dart   # 照片详情页
+│   └── settings/
+│       ├── domain/
+│       │   └── app_settings.dart      # 设置数据模型
+│       └── presentation/
+│           ├── settings_service.dart  # 设置服务
+│           └── pages/
+│               └── settings_page.dart  # 设置页
+└── pubspec.yaml                  # 依赖配置
 ```
 
 ---
@@ -260,52 +300,110 @@ lib/
 ```dart
 // 分析结果模型
 class AnalysisResult {
-  final String sceneType;        // 场景类型
-  final CameraParams params;     // 推荐参数
-  final List<String> suggestions;// 拍摄建议
-  final EditingParams editing;   // 修图参数
-  final DateTime timestamp;      // 时间戳
-  
+  final String shootingAdvice;        // 拍摄建议
+  final Map<String, dynamic> cameraParams;     // 相机参数
+  final List<String> filterSuggestions; // 滤镜建议
+  final Map<String, dynamic> editParams;   // 修图参数
+
   // 工厂方法从 JSON 创建
   factory AnalysisResult.fromJson(Map<String, dynamic> json);
-  
+
   // 转换为 JSON
   Map<String, dynamic> toJson();
 }
 
-// 相机参数模型
-class CameraParams {
-  final int? iso;               // ISO 值
-  final String? shutterSpeed;   // 快门速度
-  final String? aperture;       // 光圈
-  final String? exposureComp;   // 曝光补偿
-  final String? whiteBalance;   // 白平衡
-  final String? focusMode;      // 对焦模式
-}
+// 照片元数据模型 (新增)
+class PhotoMetadata {
+  final String id;                    // 唯一标识 (格式: photo_YYYYMMDD_HHMMSS_seq)
+  final String originalPath;          // 原图路径
+  final String thumbnailPath;         // 缩略图路径 (200x200)
+  final DateTime capturedAt;          // 拍摄时间
+  final AnalysisResult? analysisResult; // AI 分析结果
+  final Map<String, dynamic>? cameraSettings; // 相机设置 (闪光灯等)
 
-// 设置模型
-class AppSettings {
-  final ApiConfig apiConfig;    // API 配置
-  final AnalysisConfig analysis;// 分析配置
-  final DisplayConfig display;  // 显示配置
-  
-  // 支持从本地存储加载和保存
-  Future<void> save();
-  static Future<AppSettings> load();
+  // 从 JSON 创建
+  factory PhotoMetadata.fromJson(Map<String, dynamic> json);
+
+  // 转换为 JSON
+  Map<String, dynamic> toJson();
 }
 ```
 
 #### 5.1.2 服务层 (Services)
 
 ```dart
+// 照片存储服务 (新增)
+class PhotoStorageService extends ChangeNotifier {
+  List<PhotoMetadata> _photos = [];
+
+  // 初始化存储目录和加载元数据
+  Future<void> initialize();
+
+  // 保存照片并返回元数据
+  Future<PhotoMetadata> savePhoto(
+    XFile photo,
+    AnalysisResult? analysisResult, {
+    Map<String, dynamic>? cameraSettings,
+  });
+
+  // 获取所有照片（按时间倒序）
+  List<PhotoMetadata> get photos;
+
+  // 根据 ID 获取照片
+  PhotoMetadata? getPhotoById(String id);
+
+  // 删除照片
+  Future<void> deletePhoto(String id);
+
+  // 获取总存储大小
+  Future<int> getTotalStorageSize();
+
+  // 清空所有照片（谨慎使用）
+  Future<void> clearAllPhotos();
+
+  // 私有方法：生成缩略图
+  Future<String> _generateThumbnail(String originalPath);
+
+  // 私有方法：加载/保存元数据 JSON
+  Future<void> _loadMetadata();
+  Future<void> _saveMetadata();
+}
+
+// 相机服务
+class CameraService extends ChangeNotifier {
+  CameraController? _controller;
+  FlashMode _flashMode = FlashMode.off;
+
+  // 初始化相机，设置默认闪光灯为关闭
+  Future<void> initialize();
+
+  // 设置闪光灯模式 (新增)
+  Future<void> setFlashMode(FlashMode mode);
+
+  // 获取当前闪光灯模式
+  FlashMode get flashMode;
+
+  // 拍照并保存到存储服务（修改）
+  Future<PhotoMetadata?> takePhoto(
+    PhotoStorageService storageService, {
+    AnalysisResult? analysisResult,
+  });
+
+  // 捕获帧用于分析
+  Future<Uint8List?> captureFrameForAnalysis();
+
+  // 计算帧差异用于稳定性检测
+  double calculateFrameDifference(Uint8List current, Uint8List previous);
+}
+
 // 分析服务 - 核心业务逻辑
 class AnalysisService {
   final ApiAdapter _apiAdapter;
   final StabilityDetector _stabilityDetector;
-  
+
   // 单次分析
   Future<AnalysisResult> analyzeScene(Uint8List image);
-  
+
   // 持续监测 (自动触发)
   void startMonitoring(Stream<Uint8List> imageStream);
   void stopMonitoring();
@@ -662,6 +760,7 @@ try-catch 包裹
 
 ### 7.1 MVP 已完成功能 ✓
 
+#### 基础功能
 - [x] Flutter 项目基础架构搭建
 - [x] 相机预览和控制 (Android)
 - [x] 场景稳定性检测算法
@@ -672,6 +771,49 @@ try-catch 包裹
 - [x] 状态管理和通知机制
 - [x] 日志系统和错误处理
 - [x] 基础文档
+
+#### 照片管理功能 (新增)
+- [x] **PhotoMetadata 数据模型** - 照片元数据管理
+- [x] **PhotoStorageService** - 照片存储服务
+  - 照片保存到应用文档目录
+  - 自动生成 200x200 缩略图
+  - JSON 元数据持久化
+  - 照片列表查询和管理
+- [x] **照片列表页面** (PhotoGalleryPage)
+  - 3 列网格布局展示
+  - 显示拍摄时间和 AI 分析标识
+  - 空状态提示
+- [x] **照片详情页面** (PhotoDetailPage)
+  - 全屏照片查看（支持缩放）
+  - 完整的 AI 分析结果展示
+  - 拍摄信息（时间、参数）
+  - 删除和分享功能
+- [x] **拍照页增强**
+  - 快门按钮旁显示最新照片缩略图
+  - 点击缩略图进入图库
+  - 拍照成功后显示详情入口
+
+#### 相机控制功能 (新增)
+- [x] **闪光灯控制**
+  - 三种模式：关闭 / 自动 / 开启
+  - 默认设置为关闭状态
+  - 循环切换按钮，图标正确显示
+  - 解决频繁闪烁问题
+- [x] **相机服务增强**
+  - 集成 PhotoStorageService
+  - 拍照后自动保存并关联 AI 分析结果
+  - 保存相机设置（闪光灯模式等）
+
+#### 数据持久化 (新增)
+- [x] **本地存储**
+  - 照片文件存储
+  - 缩略图存储
+  - 元数据 JSON 存储
+  - 应用重启后数据持久化
+- [x] **存储管理**
+  - 总存储大小统计
+  - 批量删除功能
+  - 存储空间监控
 
 ### 7.2 短期优化 (1-2 周)
 
@@ -881,14 +1023,233 @@ Content-Type: multipart/form-data
 
 ---
 
-## 9. 版本历史
+## 9. 新增功能详细说明 (v1.1.0)
+
+### 9.1 照片存储系统
+
+#### 9.1.1 存储架构
+
+```
+应用文档目录/
+├── photos/                           # 原始照片
+│   └── photo_20260407_143022_001.jpg
+├── thumbnails/                       # 缩略图 (200x200)
+│   └── photo_20260407_143022_001_thumb.jpg
+└── metadata.json                     # 照片元数据索引
+```
+
+#### 9.1.2 照片 ID 生成规则
+
+- **格式**: `photo_YYYYMMDD_HHMMSS_seq`
+- **示例**: `photo_20260407_143022_001`
+- **组成部分**:
+  - `photo`: 固定前缀
+  - `20260407`: 拍摄日期 (YYYYMMDD)
+  - `143022`: 拍摄时间 (HHMMSS)
+  - `001`: 序列号 (3位数字，自动递增)
+
+#### 9.1.3 元数据结构
+
+```json
+[
+  {
+    "id": "photo_20260407_143022_001",
+    "originalPath": "/data/photos/photo_20260407_143022_001.jpg",
+    "thumbnailPath": "/data/thumbnails/photo_20260407_143022_001_thumb.jpg",
+    "capturedAt": "2026-04-07T14:30:22.123Z",
+    "analysisResult": {
+      "shooting_advice": "建议降低曝光补偿以保留天空细节",
+      "camera_params": {
+        "iso": 100,
+        "shutter_speed": "1/500"
+      },
+      "filter_suggestions": ["自然", "鲜艳"],
+      "edit_params": {
+        "exposure": -0.3,
+        "contrast": 10
+      }
+    },
+    "cameraSettings": {
+      "flash_mode": "FlashMode.off"
+    }
+  }
+]
+```
+
+### 9.2 闪光灯控制系统
+
+#### 9.2.1 闪光灯模式
+
+| 模式 | 图标 | 说明 | 适用场景 |
+|------|------|------|----------|
+| **关闭** | `Icons.flash_off` | 不使用闪光灯 | 日光、明亮环境 |
+| **自动** | `Icons.flash_auto` | 根据光线自动决定 | 日常拍摄 |
+| **开启** | `Icons.flash_on` | 强制使用闪光灯 | 逆光、暗光环境 |
+
+#### 9.2.2 实现细节
+
+```dart
+// 初始化时默认关闭
+await _controller!.setFlashMode(FlashMode.off);
+
+// 用户循环切换模式
+FlashMode.off → FlashMode.auto → FlashMode.always → FlashMode.off
+
+// 拍照时保存闪光灯状态
+cameraSettings: {
+  'flash_mode': _flashMode.toString()
+}
+```
+
+### 9.3 图库功能
+
+#### 9.3.1 照片列表页 (PhotoGalleryPage)
+
+**布局**: 3 列网格布局
+**功能**:
+- 显示所有已拍摄照片的缩略图
+- 每张照片显示拍摄时间
+- 有 AI 分析的照片显示蓝色星星图标
+- 点击照片进入详情页
+- 空状态友好提示
+
+**时间显示规则**:
+- 今天: 显示时间 (如: 14:30)
+- 昨天: 显示 "Yesterday"
+- 7 天内: 显示 "X days ago"
+- 其他: 显示日期 (如: 4/7)
+
+#### 9.3.2 照片详情页 (PhotoDetailPage)
+
+**页面组成**:
+1. **全屏照片**: 支持双指缩放
+2. **拍摄信息**:
+   - 拍摄时间
+   - 照片 ID
+   - 相机设置 (闪光灯等)
+3. **AI 分析结果**:
+   - 💡 拍摄建议
+   - 📷 相机参数
+   - 🎨 滤镜建议
+   - 🔧 修图参数
+4. **操作按钮**:
+   - 分享 (即将推出)
+   - 删除 (带确认对话框)
+
+### 9.4 拍照页增强
+
+#### 9.4.1 控制按钮布局
+
+```
+┌─────────────────────────────────────┐
+│  [闪光灯]  [图库]  [快门]           │
+│   (48x48)  (48x48)  (72x72)         │
+└─────────────────────────────────────┘
+```
+
+#### 9.4.2 缩略图显示逻辑
+
+- 有照片: 显示最新照片的圆形缩略图
+- 无照片: 显示相册图标占位符
+- 点击后: 导航到照片列表页
+
+#### 9.4.3 拍照流程更新
+
+```dart
+// 旧流程 (已废弃)
+final photo = await cameraService.takePhoto();
+_showPhotoResult(photo.path);
+
+// 新流程 (当前实现)
+final metadata = await cameraService.takePhoto(
+  storageService,
+  analysisResult: currentAnalysisResult,
+);
+_showPhotoResult(metadata);
+```
+
+### 9.5 技术实现要点
+
+#### 9.5.1 缩略图生成
+
+```dart
+// 使用 image 包生成缩略图
+img.Image original = img.decodeImage(bytes);
+img.Image thumbnail = img.copyResize(
+  original,
+  width: 200,
+  height: 200,
+  interpolation: img.Interpolation.linear,
+);
+// 编码为 JPEG，质量 85%
+final jpg = img.encodeJpg(thumbnail, quality: 85);
+```
+
+#### 9.5.2 字符串插值注意事项
+
+```dart
+// ❌ 错误写法
+'${prefix}_$dateStr_${sequence}'  // $dateStr_ 会被解析为变量名
+
+// ✅ 正确写法
+'${prefix}_${dateStr}_${sequence}' // 使用 ${} 明确变量边界
+```
+
+#### 9.5.3 网络配置
+
+中国大陆用户需要配置镜像源：
+
+```bash
+export PUB_HOSTED_URL=https://pub.flutter-io.cn
+export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
+```
+
+### 9.6 使用指南
+
+#### 9.6.1 首次使用
+
+1. 启动应用，授予相机和存储权限
+2. 等待相机初始化完成
+3. 确认闪光灯图标显示为"关闭"状态
+4. 开始拍照，照片会自动保存到应用存储
+
+#### 9.6.2 拍照建议
+
+1. **调整构图**: 观察 AI 建议覆盖层的拍摄参数
+2. **设置闪光灯**: 根据环境光线调整闪光灯模式
+3. **等待稳定**: 等待场景稳定后 AI 会自动分析
+4. **点击快门**: 拍照后可以查看详情或继续拍摄
+
+#### 9.6.3 查看照片
+
+1. 点击快门按钮右侧的圆形缩略图
+2. 浏览照片列表，点击查看详情
+3. 在详情页可以查看完整的 AI 分析结果
+4. 不需要的照片可以删除
+
+#### 9.6.4 数据管理
+
+- **查看存储大小**: 在设置中查看总存储占用
+- **删除照片**: 在详情页点击删除按钮
+- **清空所有**: 在设置中选择"清空所有照片"（谨慎操作）
+
+---
+
+## 10. 版本历史
 
 | 版本 | 日期 | 变更内容 |
 |------|------|---------|
 | 0.1.0 | 2024-01 | 初始设计文档，完成架构设计 |
-| 1.0.0 | TBD | MVP 发布，Android 平台基础功能 |
+| 1.0.0 | 2024-01 | MVP 发布，Android 平台基础功能 |
+| 1.1.0 | 2026-04 | **照片管理和闪光灯控制功能** |
+| | | ✅ 新增照片本地存储系统 |
+| | | ✅ 新增照片列表和详情页 |
+| | | ✅ 新增闪光灯控制功能 |
+| | | ✅ 修复频繁闪烁问题 |
+| | | ✅ 完善文档和使用指南 |
 
 ---
 
-*文档最后更新：2024 年 1 月*
+*文档最后更新：2026 年 4 月 7 日*
 *维护者：开发团队*
+*文档版本：1.1.0*
