@@ -1,0 +1,36 @@
+{
+  "name": "Flutter Smart Camera",
+  "image": "ghcr.io/cirruslabs/flutter:stable",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17"
+    },
+    "ghcr.io/devcontainers/features/android-sdk:1": {
+      "version": "latest"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Dart-Code.flutter",
+        "Dart-Code.dart-code",
+        "GitHub.copilot",
+        "GitHub.vscode-pull-request-github"
+      ],
+      "settings": {
+        "dart.flutterSdkPath": "/opt/flutter",
+        "dart.sdkPath": "/opt/flutter/bin/cache/dart-sdk",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2
+      }
+    }
+  },
+  "forwardPorts": [
+    8080
+  ],
+  "postCreateCommand": "cd smart_cam && flutter pub get && flutter doctor -v",
+  "remoteUser": "vscode",
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,consistency=cached"
+  ]
+}

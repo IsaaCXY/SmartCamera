@@ -1,0 +1,55 @@
+```
+# Dependencies
+.gradle/
+node_modules/
+
+# Build artifacts
+build/
+dist/
+target/
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Java
+*.class
+*.jar
+*.war
+
+# Compiled files
+*.o
+*.obj
+*.so
+*.dll
+*.exe
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Cache
+.mypy_cache/
+.pytest_cache/
+```
