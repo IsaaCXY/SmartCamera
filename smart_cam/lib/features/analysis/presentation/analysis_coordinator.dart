@@ -6,28 +6,20 @@ import 'package:flutter/foundation.dart';
 import '../../camera/presentation/camera_service.dart';
 import 'stability/stability_engine.dart';
 import 'stability/scene_change_detector.dart';
-import 'stability/analysis_trigger.dart';
 import '../../../../core/utils/logger.dart';
 
 class AnalysisCoordinator extends ChangeNotifier {
   final StabilityEngine _stability;
   final SceneChangeDetector _sceneChange;
-  final AnalysisTrigger _trigger;
   final CameraService _cameraService;
 
   Uint8List? _previousFrame;
 
   AnalysisCoordinator({
     required CameraService cameraService,
-  })   : _stability = StabilityEngine(),
-        _sceneChange = SceneChangeDetector(),
-        _trigger = AnalysisTrigger(
-          stability: StabilityEngine(),
-          sceneChange: SceneChangeDetector(),
-        ),
-        _cameraService = cameraService {
-    AppLogger.i('AnalysisCoordinator initialized', 'AnalysisCoordinator');
-  }
+  })   : _cameraService = cameraService,
+        _stability = StabilityEngine(),
+        _sceneChange = SceneChangeDetector();
 
   /// Process a new frame from the camera.
   /// Calculates frame difference and updates stability/scene change detectors.
@@ -75,10 +67,14 @@ class AnalysisCoordinator extends ChangeNotifier {
   double get sceneChange => _sceneChange.score;
 
   /// Whether the scene is currently stable
-  bool get isStable => _trigger.isStable;
+  bool get isStable => _stability.isStable;
 
-  /// Whether analysis should be triggered
-  bool get shouldAnalyze => _trigger.shouldAnalyze;
+  /// Whether a scene change has been detected
+  bool get hasSceneChanged => _sceneChange.hasChanged;
+
+  /// Whether analysis should be triggered.
+  /// Triggered when: stable AND scene has changed.
+  bool get shouldAnalyze => _stability.isStable && _sceneChange.hasChanged;
 
   /// Reset all tracking state
   void reset() {

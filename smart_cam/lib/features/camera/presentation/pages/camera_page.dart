@@ -504,8 +504,11 @@ class _CameraPageState extends State<CameraPage> {
     AnalysisService analysisService,
     CameraService cameraService,
   ) {
+    final coordinator = context.watch<AnalysisCoordinator>();
     final isAnalyzing = analysisService.isAnalyzing;
-    final hasResult = analysisService.currentResult != null;
+    final isStable = coordinator.isStable;
+    final stability = coordinator.stability;
+    final sceneChange = coordinator.sceneChange;
 
     String stabilityStatus;
     Color statusColor;
@@ -513,8 +516,8 @@ class _CameraPageState extends State<CameraPage> {
     if (isAnalyzing) {
       stabilityStatus = '🔄 分析中';
       statusColor = Colors.orange;
-    } else if (hasResult) {
-      stabilityStatus = '✅ 已分析';
+    } else if (isStable) {
+      stabilityStatus = '✅ 画面稳定';
       statusColor = Colors.green;
     } else {
       stabilityStatus = '⏳ 检测中';
@@ -532,18 +535,18 @@ class _CameraPageState extends State<CameraPage> {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.orange.withValues(alpha: 0.3), width: 1),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.bug_report,
-              color: Colors.orange,
-              size: 16,
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            Row(
               children: [
+                const Icon(
+                  Icons.bug_report,
+                  color: Colors.orange,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
                 Text(
                   'DEBUG MODE',
                   style: TextStyle(
@@ -553,15 +556,24 @@ class _CameraPageState extends State<CameraPage> {
                     decoration: TextDecoration.none
                   ),
                 ),
-                Text(
-                  '状态: $stabilityStatus',
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 11,
-                    decoration: TextDecoration.none
-                  ),
-                ),
               ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '状态: $stabilityStatus',
+              style: TextStyle(
+                color: statusColor,
+                fontSize: 11,
+                decoration: TextDecoration.none
+              ),
+            ),
+            Text(
+              '稳定性: ${(stability * 100).toStringAsFixed(0)}%, 场景变化: ${(sceneChange * 100).toStringAsFixed(0)}%',
+              style: TextStyle(
+                color: Colors.orange[300],
+                fontSize: 9,
+                decoration: TextDecoration.none,
+              ),
             ),
           ],
         ),
