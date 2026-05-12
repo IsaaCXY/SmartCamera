@@ -1,4 +1,4 @@
-/// Main entry point for the Smart Camera app.
+// Main entry point for the Smart Camera app.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'features/camera/presentation/camera_service.dart';
@@ -14,7 +14,7 @@ import 'features/photo/presentation/pages/photo_detail_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   runApp(const SmartCamApp());
 }
 

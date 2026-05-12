@@ -1,4 +1,4 @@
-/// Camera page with real-time AI suggestions overlay.
+// Camera page with real-time AI suggestions overlay.
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -57,7 +57,8 @@ class _CameraPageState extends State<CameraPage> {
   /// Start monitoring frames for stability and analysis.
   void _startFrameMonitoring() {
     // Check frames every 500ms
-    _frameTimer = Timer.periodic(const Duration(milliseconds: 1000), (timer) async {
+    _frameTimer =
+        Timer.periodic(const Duration(milliseconds: 1000), (timer) async {
       try {
         final coordinator = context.read<AnalysisCoordinator>();
         final analysisService = context.read<AnalysisService>();
@@ -166,7 +167,7 @@ class _CameraPageState extends State<CameraPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                
+
                 // Camera parameters
                 if (result.cameraParams.isNotEmpty) ...[
                   Text(
@@ -185,7 +186,7 @@ class _CameraPageState extends State<CameraPage> {
                     ),
                   ),
                 ],
-                
+
                 // Filter suggestions
                 if (result.filterSuggestions.isNotEmpty) ...[
                   const SizedBox(height: 8),
@@ -391,7 +392,8 @@ class _CameraPageState extends State<CameraPage> {
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.5),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
+            border: Border.all(
+                color: Colors.white.withValues(alpha: 0.3), width: 1),
           ),
           child: const Icon(
             Icons.settings,
@@ -417,6 +419,7 @@ class _CameraPageState extends State<CameraPage> {
     final isStable = coordinator.isStable;
     final stability = coordinator.stability;
     final sceneChange = coordinator.sceneChange;
+    final settingsService = context.watch<SettingsService>();
 
     String stabilityStatus;
     Color statusColor;
@@ -445,27 +448,24 @@ class _CameraPageState extends State<CameraPage> {
       decoration: BoxDecoration(
         color: Colors.orange.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.5), width: 1),
+        border:
+            Border.all(color: Colors.orange.withValues(alpha: 0.5), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
+          const Row(
             children: [
-              const Icon(
-                Icons.bug_report,
-                color: Colors.orange,
-                size: 12
-              ),
-              const SizedBox(width: 4),
+              Icon(Icons.bug_report, color: Colors.orange, size: 12),
+              SizedBox(width: 4),
               Text(
                 'DEBUG',
                 style: TextStyle(
                   color: Colors.orange,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  decoration: TextDecoration.none
+                  decoration: TextDecoration.none,
                 ),
               ),
             ],
@@ -486,6 +486,7 @@ class _CameraPageState extends State<CameraPage> {
               fontSize: 10,
             ),
           ),
+          ..._buildLlmDebugRows(analysisService, settingsService),
           if (!isStable && !isAnalyzing)
             Text(
               '稳定性: ${(stability * 100).toStringAsFixed(0)}%, 场景变化: ${(sceneChange * 100).toStringAsFixed(0)}%',
@@ -509,6 +510,7 @@ class _CameraPageState extends State<CameraPage> {
     final isStable = coordinator.isStable;
     final stability = coordinator.stability;
     final sceneChange = coordinator.sceneChange;
+    final settingsService = context.watch<SettingsService>();
 
     String stabilityStatus;
     Color statusColor;
@@ -533,27 +535,28 @@ class _CameraPageState extends State<CameraPage> {
         decoration: BoxDecoration(
           color: Colors.orange.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.orange.withValues(alpha: 0.3), width: 1),
+          border:
+              Border.all(color: Colors.orange.withValues(alpha: 0.3), width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
+            const Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.bug_report,
                   color: Colors.orange,
                   size: 16,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'DEBUG MODE',
                   style: TextStyle(
                     color: Colors.orange,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    decoration: TextDecoration.none
+                    decoration: TextDecoration.none,
                   ),
                 ),
               ],
@@ -562,10 +565,9 @@ class _CameraPageState extends State<CameraPage> {
             Text(
               '状态: $stabilityStatus',
               style: TextStyle(
-                color: statusColor,
-                fontSize: 11,
-                decoration: TextDecoration.none
-              ),
+                  color: statusColor,
+                  fontSize: 11,
+                  decoration: TextDecoration.none),
             ),
             Text(
               '稳定性: ${(stability * 100).toStringAsFixed(0)}%, 场景变化: ${(sceneChange * 100).toStringAsFixed(0)}%',
@@ -575,10 +577,90 @@ class _CameraPageState extends State<CameraPage> {
                 decoration: TextDecoration.none,
               ),
             ),
+            ..._buildLlmDebugRows(analysisService, settingsService),
           ],
         ),
       ),
     );
+  }
+
+  List<Widget> _buildLlmDebugRows(
+    AnalysisService analysisService,
+    SettingsService settingsService,
+  ) {
+    return [
+      const SizedBox(height: 4),
+      _buildDebugLine(
+        'LLM: ${_formatProvider(settingsService.settings.selectedProvider)}',
+      ),
+      _buildDebugLine('API: ${_formatApiValidation(settingsService)}'),
+      _buildDebugLine(
+        '检测: ${analysisService.isAnalyzing ? '正在检测' : '空闲'}',
+      ),
+      _buildDebugLine(
+        '返回: ${_formatAnalysisResultStatus(analysisService)}',
+        maxLines: 2,
+      ),
+    ];
+  }
+
+  Widget _buildDebugLine(String text, {int maxLines = 1}) {
+    return Text(
+      text,
+      maxLines: maxLines,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: Colors.orange[200],
+        fontSize: 9,
+        decoration: TextDecoration.none,
+      ),
+    );
+  }
+
+  String _formatProvider(String provider) {
+    switch (provider) {
+      case 'openai':
+        return 'OpenAI';
+      case 'anthropic':
+        return 'Anthropic';
+      case 'azure':
+        return 'Azure OpenAI';
+      case 'zhipu_glm':
+        return '智谱 GLM';
+      case 'custom':
+        return 'Custom Endpoint';
+      default:
+        return provider;
+    }
+  }
+
+  String _formatApiValidation(SettingsService settingsService) {
+    final message = settingsService.apiValidationMessage;
+    switch (settingsService.apiValidationStatus) {
+      case ApiValidationStatus.notConfigured:
+        return '未配置 API Key';
+      case ApiValidationStatus.unverified:
+        return '已配置，未验证';
+      case ApiValidationStatus.checking:
+        return '正在验证';
+      case ApiValidationStatus.valid:
+        return '有效${message == null ? '' : ' - $message'}';
+      case ApiValidationStatus.invalid:
+        return '无效${message == null ? '' : ' - $message'}';
+    }
+  }
+
+  String _formatAnalysisResultStatus(AnalysisService analysisService) {
+    switch (analysisService.lastRunStatus) {
+      case AnalysisRunStatus.idle:
+        return analysisService.currentResult == null ? '暂无返回' : '已有结果';
+      case AnalysisRunStatus.analyzing:
+        return '请求中';
+      case AnalysisRunStatus.success:
+        return '成功 - ${analysisService.lastRunMessage ?? '有结果'}';
+      case AnalysisRunStatus.failed:
+        return '失败 - ${analysisService.lastErrorMessage ?? '未知错误'}';
+    }
   }
 
   /// Extract scene title from shooting advice
@@ -588,17 +670,20 @@ class _CameraPageState extends State<CameraPage> {
 
     if (lowerAdvice.contains('人像') || lowerAdvice.contains('portrait')) {
       return '人像';
-    } else if (lowerAdvice.contains('风景') || lowerAdvice.contains('landscape')) {
+    } else if (lowerAdvice.contains('风景') ||
+        lowerAdvice.contains('landscape')) {
       return '风景';
     } else if (lowerAdvice.contains('夜景') || lowerAdvice.contains('night')) {
       return '夜景';
     } else if (lowerAdvice.contains('食物') || lowerAdvice.contains('food')) {
       return '食物';
-    } else if (lowerAdvice.contains('建筑') || lowerAdvice.contains('architecture')) {
+    } else if (lowerAdvice.contains('建筑') ||
+        lowerAdvice.contains('architecture')) {
       return '建筑';
     } else if (lowerAdvice.contains('静物') || lowerAdvice.contains('still')) {
       return '静物';
-    } else if (lowerAdvice.contains('逆光') || lowerAdvice.contains('backlight')) {
+    } else if (lowerAdvice.contains('逆光') ||
+        lowerAdvice.contains('backlight')) {
       return '逆光';
     } else {
       return '通用场景';

@@ -1,11 +1,9 @@
-/// Camera service for handling camera operations.
-/// Manages camera initialization, preview, and image capture.
+// Camera service for handling camera operations.
+// Manages camera initialization, preview, and image capture.
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
-import '../../../core/config/app_config.dart';
 import '../../../core/utils/logger.dart';
 import '../../photo/domain/photo_metadata.dart';
 import '../../photo/presentation/photo_storage_service.dart';
@@ -35,10 +33,10 @@ class CameraService extends ChangeNotifier {
   Future<void> initialize() async {
     try {
       AppLogger.i('Initializing camera...', 'CameraService');
-      
+
       // Get available cameras
       _cameras = await availableCameras();
-      
+
       // Find back camera
       final backCamera = _cameras!.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.back,
@@ -78,16 +76,16 @@ class CameraService extends ChangeNotifier {
 
     try {
       _isProcessing = true;
-      
+
       // Take picture
       final XFile file = await _controller!.takePicture();
-      
+
       // Read and resize image
       final bytes = await file.readAsBytes();
-      
+
       // TODO: Implement image resizing to AppConfig.analysisImageWidth/Height
       // For now, return original bytes (backend can handle resizing)
-      
+
       AppLogger.d('Frame captured: ${bytes.length} bytes', 'CameraService');
       return bytes;
     } catch (e) {
@@ -162,9 +160,9 @@ class CameraService extends ChangeNotifier {
       final maxPossibleDiff = totalPixels * 255 * 3;
       final normalizedDiff = totalPixelDiff / maxPossibleDiff;
 
-      AppLogger.d('Frame difference: ${normalizedDiff.toStringAsFixed(4)}', 'CameraService');
+      AppLogger.d('Frame difference: ${normalizedDiff.toStringAsFixed(4)}',
+          'CameraService');
       return normalizedDiff.clamp(0.0, 1.0);
-
     } catch (e) {
       AppLogger.e('Error calculating frame difference', 'CameraService', e);
       return 1.0; // Return maximum difference on error
@@ -174,7 +172,8 @@ class CameraService extends ChangeNotifier {
   /// Set flash mode.
   Future<void> setFlashMode(FlashMode mode) async {
     if (_controller == null) {
-      AppLogger.w('Cannot set flash mode: camera not initialized', 'CameraService');
+      AppLogger.w(
+          'Cannot set flash mode: camera not initialized', 'CameraService');
       return;
     }
 

@@ -1,4 +1,4 @@
-/// Repository interface for analysis operations.
+// Repository interface for analysis operations.
 import 'dart:typed_data';
 import '../domain/analysis_result.dart';
 

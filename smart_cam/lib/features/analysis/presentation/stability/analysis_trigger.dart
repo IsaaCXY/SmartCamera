@@ -1,5 +1,5 @@
-/// Analysis trigger that evaluates whether to analyze a frame.
-/// Combines stability and scene change signals.
+// Analysis trigger that evaluates whether to analyze a frame.
+// Combines stability and scene change signals.
 import 'stability_engine.dart';
 import 'scene_change_detector.dart';
 import '../../../../core/utils/logger.dart';
@@ -24,7 +24,8 @@ class AnalysisTrigger {
     final result = stable && changed;
 
     if (result) {
-      AppLogger.i('Analysis triggered: stable=$stable, changed=$changed', 'AnalysisTrigger');
+      AppLogger.i('Analysis triggered: stable=$stable, changed=$changed',
+          'AnalysisTrigger');
     }
 
     return result;

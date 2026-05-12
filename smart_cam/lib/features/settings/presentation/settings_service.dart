@@ -1,18 +1,44 @@
-/// Settings service for managing app preferences.
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/config/app_config.dart';
 import '../domain/app_settings.dart';
+
+enum ApiValidationStatus {
+  notConfigured,
+  unverified,
+  checking,
+  valid,
+  invalid,
+}
 
 class SettingsService extends ChangeNotifier {
   static const String _storageKey = 'app_settings';
 
+  final http.Client _client;
+  final bool _ownsClient;
   AppSettings _settings = AppSettings();
+  ApiValidationStatus _apiValidationStatus = ApiValidationStatus.notConfigured;
+  String? _apiValidationMessage;
+
+  SettingsService({http.Client? client})
+      : _client = client ?? http.Client(),
+        _ownsClient = client == null;
 
   AppSettings get settings => _settings;
+
+  ApiValidationStatus get apiValidationStatus => _apiValidationStatus;
+
+  String? get apiValidationMessage => _apiValidationMessage;
+
+  bool get isApiConfigured => _settings.apiKey.trim().isNotEmpty;
 
   /// Update selected AI provider.
   void setProvider(String provider) {
     _settings.selectedProvider = provider;
+    _resetApiValidationForCurrentConfig();
     notifyListeners();
     _saveSettings();
   }
@@ -20,6 +46,7 @@ class SettingsService extends ChangeNotifier {
   /// Update API key.
   void setApiKey(String key) {
     _settings.apiKey = key;
+    _resetApiValidationForCurrentConfig();
     notifyListeners();
     _saveSettings();
   }
@@ -62,10 +89,12 @@ class SettingsService extends ChangeNotifier {
         // Parse JSON string back to Map
         final Map<String, dynamic> json = _decodeJson(settingsJson);
         _settings = AppSettings.fromJson(json);
+        _resetApiValidationForCurrentConfig();
         AppLogger.i('Settings loaded from storage', 'SettingsService');
       } else {
         // First run, use defaults
         _settings = AppSettings();
+        _resetApiValidationForCurrentConfig();
         await _saveSettings(); // Save defaults
         AppLogger.i('Using default settings', 'SettingsService');
       }
@@ -75,6 +104,7 @@ class SettingsService extends ChangeNotifier {
       AppLogger.e('Failed to load settings', 'SettingsService', e);
       // Fallback to defaults
       _settings = AppSettings();
+      _resetApiValidationForCurrentConfig();
       notifyListeners();
     }
   }
@@ -100,10 +130,20 @@ class SettingsService extends ChangeNotifier {
 
       // Validate API key
       if (_settings.apiKey.isEmpty) {
+        _setApiValidation(
+          ApiValidationStatus.notConfigured,
+          'API key 未配置',
+        );
         return {
           'success': false,
           'message': 'Please enter an API key first',
         };
+      }
+
+      _setApiValidation(ApiValidationStatus.checking, '正在验证 API');
+
+      if (_settings.selectedProvider == 'zhipu_glm') {
+        return await _testZhipuGlmConnection();
       }
 
       // Simulate API call (replace with actual API call in production)
@@ -112,6 +152,10 @@ class SettingsService extends ChangeNotifier {
 
       // Basic validation
       if (_settings.apiKey.length < 10) {
+        _setApiValidation(
+          ApiValidationStatus.invalid,
+          'API key appears to be invalid (too short)',
+        );
         return {
           'success': false,
           'message': 'API key appears to be invalid (too short)',
@@ -132,6 +176,9 @@ class SettingsService extends ChangeNotifier {
         case 'azure':
           message = 'Azure OpenAI connection successful';
           break;
+        case 'zhipu_glm':
+          message = '智谱 GLM connection successful';
+          break;
         case 'custom':
           message = 'Custom endpoint connection successful';
           break;
@@ -139,6 +186,7 @@ class SettingsService extends ChangeNotifier {
           message = 'Connection successful!';
       }
 
+      _setApiValidation(ApiValidationStatus.valid, message);
       return {
         'success': true,
         'message': message,
@@ -146,11 +194,69 @@ class SettingsService extends ChangeNotifier {
       };
     } catch (e) {
       AppLogger.e('Connection test failed', 'SettingsService', e);
+      _setApiValidation(ApiValidationStatus.invalid, e.toString());
       return {
         'success': false,
         'message': 'Connection failed: ${e.toString()}',
       };
     }
+  }
+
+  Future<Map<String, dynamic>> _testZhipuGlmConnection() async {
+    final response = await _client
+        .post(
+          Uri.parse(AppConfig.zhipuGlmApiUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${_settings.apiKey}',
+          },
+          body: jsonEncode({
+            'model': AppConfig.zhipuGlmVisionModel,
+            'messages': [
+              {
+                'role': 'user',
+                'content': [
+                  {
+                    'type': 'text',
+                    'text': 'Reply exactly OK to confirm connectivity.',
+                  },
+                ],
+              },
+            ],
+            'thinking': {'type': 'disabled'},
+          }),
+        )
+        .timeout(AppConfig.apiTimeout);
+
+    if (response.statusCode != 200) {
+      final message = '智谱 GLM connection failed: ${response.statusCode}';
+      _setApiValidation(ApiValidationStatus.invalid, message);
+      return {
+        'success': false,
+        'message': message,
+      };
+    }
+
+    final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+    final choices = jsonData['choices'];
+    if (choices is! List || choices.isEmpty) {
+      const message = '智谱 GLM connection failed: invalid response';
+      _setApiValidation(ApiValidationStatus.invalid, message);
+      return {
+        'success': false,
+        'message': message,
+      };
+    }
+
+    _setApiValidation(
+      ApiValidationStatus.valid,
+      '智谱 GLM connection successful',
+    );
+    return {
+      'success': true,
+      'message': '智谱 GLM connection successful',
+      'provider': _settings.selectedProvider,
+    };
   }
 
   /// Clear all settings (reset to defaults).
@@ -159,6 +265,7 @@ class SettingsService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_storageKey);
       _settings = AppSettings();
+      _resetApiValidationForCurrentConfig();
       notifyListeners();
       AppLogger.i('Settings cleared', 'SettingsService');
     } catch (e) {
@@ -190,7 +297,8 @@ class SettingsService extends ChangeNotifier {
   /// Helper method to decode JSON.
   Map<String, dynamic> _decodeJson(String jsonString) {
     final Map<String, dynamic> result = {};
-    final content = jsonString.substring(1, jsonString.length - 1); // Remove { }
+    final content =
+        jsonString.substring(1, jsonString.length - 1); // Remove { }
 
     if (content.isEmpty) return result;
 
@@ -224,6 +332,30 @@ class SettingsService extends ChangeNotifier {
         .replaceAll('\n', '\\n')
         .replaceAll('\r', '\\r')
         .replaceAll('\t', '\\t');
+  }
+
+  void _resetApiValidationForCurrentConfig() {
+    if (isApiConfigured) {
+      _apiValidationStatus = ApiValidationStatus.unverified;
+      _apiValidationMessage = 'API key 已配置，尚未验证';
+    } else {
+      _apiValidationStatus = ApiValidationStatus.notConfigured;
+      _apiValidationMessage = 'API key 未配置';
+    }
+  }
+
+  void _setApiValidation(ApiValidationStatus status, String message) {
+    _apiValidationStatus = status;
+    _apiValidationMessage = message;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    if (_ownsClient) {
+      _client.close();
+    }
+    super.dispose();
   }
 }
 

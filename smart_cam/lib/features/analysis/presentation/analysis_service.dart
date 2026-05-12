@@ -1,12 +1,18 @@
-/// Service for analyzing camera frames and providing AI suggestions.
-/// Handles API calls and analysis results.
+// Service for analyzing camera frames and providing AI suggestions.
+// Handles API calls and analysis results.
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/utils/logger.dart';
 import '../domain/analysis_result.dart';
 import '../domain/analysis_repository.dart';
+
+enum AnalysisRunStatus {
+  idle,
+  analyzing,
+  success,
+  failed,
+}
 
 class AnalysisService extends ChangeNotifier {
   final AnalysisRepository _repository;
@@ -14,6 +20,9 @@ class AnalysisService extends ChangeNotifier {
   AnalysisResult? _currentResult;
   bool _isAnalyzing = false;
   DateTime? _lastAnalysisTime;
+  AnalysisRunStatus _lastRunStatus = AnalysisRunStatus.idle;
+  String? _lastRunMessage;
+  String? _lastErrorMessage;
 
   AnalysisService({required AnalysisRepository repository})
       : _repository = repository;
@@ -23,6 +32,12 @@ class AnalysisService extends ChangeNotifier {
 
   /// Whether analysis is currently in progress.
   bool get isAnalyzing => _isAnalyzing;
+
+  AnalysisRunStatus get lastRunStatus => _lastRunStatus;
+
+  String? get lastRunMessage => _lastRunMessage;
+
+  String? get lastErrorMessage => _lastErrorMessage;
 
   /// Analyze current frame if conditions are met.
   /// Returns true if analysis was started.
@@ -44,17 +59,27 @@ class AnalysisService extends ChangeNotifier {
 
     // Start analysis
     _isAnalyzing = true;
+    _lastRunStatus = AnalysisRunStatus.analyzing;
+    _lastRunMessage = '检测中';
+    _lastErrorMessage = null;
     notifyListeners();
 
     try {
       final result = await _repository.analyzeImage(imageData);
       _currentResult = result;
       _lastAnalysisTime = DateTime.now();
+      _lastRunStatus = AnalysisRunStatus.success;
+      _lastRunMessage =
+          result.shootingAdvice.isEmpty ? '检测成功' : result.shootingAdvice;
+      _lastErrorMessage = null;
 
       AppLogger.i('Analysis completed successfully', 'AnalysisService');
       notifyListeners();
       return true;
     } catch (e) {
+      _lastRunStatus = AnalysisRunStatus.failed;
+      _lastRunMessage = e.toString();
+      _lastErrorMessage = e.toString();
       AppLogger.e('Analysis failed', 'AnalysisService', e);
       return false;
     } finally {
@@ -66,6 +91,9 @@ class AnalysisService extends ChangeNotifier {
   /// Clear current analysis result.
   void clearResult() {
     _currentResult = null;
+    _lastRunStatus = AnalysisRunStatus.idle;
+    _lastRunMessage = null;
+    _lastErrorMessage = null;
     notifyListeners();
   }
 }

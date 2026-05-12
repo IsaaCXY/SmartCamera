@@ -1,4 +1,4 @@
-/// Photo detail page showing full photo with metadata and AI analysis results.
+// Photo detail page showing full photo with metadata and AI analysis results.
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -24,7 +24,8 @@ class PhotoDetailPage extends StatelessWidget {
             builder: (context, storageService, child) {
               return IconButton(
                 icon: const Icon(Icons.delete),
-                onPressed: () => _showDeleteDialog(context, storageService, photoId),
+                onPressed: () =>
+                    _showDeleteDialog(context, storageService, photoId),
               );
             },
           ),
@@ -91,7 +92,8 @@ class PhotoDetailPage extends StatelessWidget {
     );
   }
 
-  Future<PhotoMetadata?> _loadPhoto(BuildContext context, String photoId) async {
+  Future<PhotoMetadata?> _loadPhoto(
+      BuildContext context, String photoId) async {
     final storageService = context.read<PhotoStorageService>();
     return storageService.getPhotoById(photoId);
   }
@@ -131,7 +133,8 @@ class PhotoDetailPage extends StatelessWidget {
               ),
             ],
           ),
-          if (photo.cameraSettings != null && photo.cameraSettings!.isNotEmpty) ...[
+          if (photo.cameraSettings != null &&
+              photo.cameraSettings!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Row(
               children: [
@@ -281,9 +284,7 @@ class PhotoDetailPage extends StatelessWidget {
   }
 
   String _formatParams(Map<String, dynamic> params) {
-    return params.entries
-        .map((e) => '${e.key}: ${e.value}')
-        .join('\n');
+    return params.entries.map((e) => '${e.key}: ${e.value}').join('\n');
   }
 
   void _showDeleteDialog(
@@ -295,7 +296,8 @@ class PhotoDetailPage extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Photo'),
-        content: const Text('Are you sure you want to delete this photo? This action cannot be undone.'),
+        content: const Text(
+            'Are you sure you want to delete this photo? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

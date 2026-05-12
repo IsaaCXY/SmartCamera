@@ -1,4 +1,4 @@
-/// Photo storage service for managing photo persistence and metadata.
+// Photo storage service for managing photo persistence and metadata.
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -30,30 +30,37 @@ class PhotoStorageService extends ChangeNotifier {
       _appDocDir = await getApplicationDocumentsDirectory();
 
       // Create photos directory
-      _photosDir = Directory(path.join(_appDocDir!.path, AppConfig.photosDirName));
+      _photosDir =
+          Directory(path.join(_appDocDir!.path, AppConfig.photosDirName));
       if (!await _photosDir!.exists()) {
         await _photosDir!.create(recursive: true);
-        AppLogger.i('Created photos directory: ${_photosDir!.path}', 'PhotoStorageService');
+        AppLogger.i('Created photos directory: ${_photosDir!.path}',
+            'PhotoStorageService');
       }
 
       // Create thumbnails directory
-      _thumbnailsDir = Directory(path.join(_appDocDir!.path, AppConfig.thumbnailsDirName));
+      _thumbnailsDir =
+          Directory(path.join(_appDocDir!.path, AppConfig.thumbnailsDirName));
       if (!await _thumbnailsDir!.exists()) {
         await _thumbnailsDir!.create(recursive: true);
-        AppLogger.i('Created thumbnails directory: ${_thumbnailsDir!.path}', 'PhotoStorageService');
+        AppLogger.i('Created thumbnails directory: ${_thumbnailsDir!.path}',
+            'PhotoStorageService');
       }
 
       // Get metadata file
-      _metadataFile = File(path.join(_appDocDir!.path, AppConfig.metadataFileName));
+      _metadataFile =
+          File(path.join(_appDocDir!.path, AppConfig.metadataFileName));
 
       // Load existing metadata
       await _loadMetadata();
 
-      AppLogger.i('Photo storage initialized successfully. Found ${_photos.length} photos.',
+      AppLogger.i(
+          'Photo storage initialized successfully. Found ${_photos.length} photos.',
           'PhotoStorageService');
       notifyListeners();
     } catch (e) {
-      AppLogger.e('Failed to initialize photo storage', 'PhotoStorageService', e);
+      AppLogger.e(
+          'Failed to initialize photo storage', 'PhotoStorageService', e);
       rethrow;
     }
   }
@@ -223,7 +230,8 @@ class PhotoStorageService extends ChangeNotifier {
       // Sort by capture time (newest first)
       _photos.sort((a, b) => b.capturedAt.compareTo(a.capturedAt));
 
-      AppLogger.i('Loaded ${_photos.length} photo metadata entries', 'PhotoStorageService');
+      AppLogger.i('Loaded ${_photos.length} photo metadata entries',
+          'PhotoStorageService');
     } catch (e) {
       AppLogger.e('Failed to load metadata', 'PhotoStorageService', e);
       _photos = [];
@@ -242,7 +250,8 @@ class PhotoStorageService extends ChangeNotifier {
 
       await _metadataFile!.writeAsString(jsonString);
 
-      AppLogger.d('Metadata saved (${_photos.length} entries)', 'PhotoStorageService');
+      AppLogger.d(
+          'Metadata saved (${_photos.length} entries)', 'PhotoStorageService');
     } catch (e) {
       AppLogger.e('Failed to save metadata', 'PhotoStorageService', e);
       rethrow;
@@ -251,7 +260,13 @@ class PhotoStorageService extends ChangeNotifier {
 
   /// Generate unique photo ID based on timestamp
   String _generatePhotoId(DateTime timestamp) {
-    final dateStr = timestamp.toIso8601String().replaceAll('-', '').replaceAll(':', '').replaceAll('.', '').split('T').join('_');
+    final dateStr = timestamp
+        .toIso8601String()
+        .replaceAll('-', '')
+        .replaceAll(':', '')
+        .replaceAll('.', '')
+        .split('T')
+        .join('_');
     final sequence = _photos.length + 1;
     return '${AppConfig.photoIdPrefix}_${dateStr}_${sequence.toString().padLeft(3, '0')}';
   }
@@ -267,7 +282,8 @@ class PhotoStorageService extends ChangeNotifier {
           totalSize += await file.length();
         }
       } catch (e) {
-        AppLogger.w('Failed to get file size for ${photo.id}', 'PhotoStorageService');
+        AppLogger.w(
+            'Failed to get file size for ${photo.id}', 'PhotoStorageService');
       }
     }
 
@@ -283,7 +299,8 @@ class PhotoStorageService extends ChangeNotifier {
           await File(photo.originalPath).delete();
           await File(photo.thumbnailPath).delete();
         } catch (e) {
-          AppLogger.w('Failed to delete file for ${photo.id}', 'PhotoStorageService');
+          AppLogger.w(
+              'Failed to delete file for ${photo.id}', 'PhotoStorageService');
         }
       }
 

@@ -1,4 +1,4 @@
-/// Photo gallery page displaying all saved photos in a grid layout.
+// Photo gallery page displaying all saved photos in a grid layout.
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

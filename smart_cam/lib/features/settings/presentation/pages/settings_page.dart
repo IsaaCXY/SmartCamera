@@ -1,4 +1,4 @@
-/// Settings page for configuring app preferences.
+// Settings page for configuring app preferences.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../settings_service.dart';
@@ -20,7 +20,8 @@ class _SettingsPageState extends State<SettingsPage> {
   void initState() {
     super.initState();
     final settingsService = context.read<SettingsService>();
-    _apiKeyController = TextEditingController(text: settingsService.settings.apiKey);
+    _apiKeyController =
+        TextEditingController(text: settingsService.settings.apiKey);
   }
 
   @override
@@ -90,6 +91,7 @@ class _SettingsPageState extends State<SettingsPage> {
             DropdownMenuItem(value: 'openai', child: Text('OpenAI')),
             DropdownMenuItem(value: 'anthropic', child: Text('Anthropic')),
             DropdownMenuItem(value: 'azure', child: Text('Azure OpenAI')),
+            DropdownMenuItem(value: 'zhipu_glm', child: Text('智谱 GLM')),
             DropdownMenuItem(value: 'custom', child: Text('Custom Endpoint')),
           ],
           onChanged: (value) {
@@ -225,7 +227,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
         const SizedBox(height: 12),
-        
+
         // Auto Analysis Toggle
         SwitchListTile(
           title: const Text('Enable Auto Analysis'),
@@ -235,7 +237,7 @@ class _SettingsPageState extends State<SettingsPage> {
             settingsService.toggleAutoAnalysis(value);
           },
         ),
-        
+
         // Grid Lines Toggle
         SwitchListTile(
           title: const Text('Show Grid Lines'),
@@ -306,7 +308,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: Text(
                     _testMessage!,
                     style: TextStyle(
-                      color: _testSuccess == true ? Colors.green.shade700 : Colors.red.shade700,
+                      color: _testSuccess == true
+                          ? Colors.green.shade700
+                          : Colors.red.shade700,
                       fontSize: 14,
                     ),
                   ),

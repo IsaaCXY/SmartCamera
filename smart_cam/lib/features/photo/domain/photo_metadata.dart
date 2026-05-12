@@ -1,4 +1,4 @@
-/// Photo metadata model for storing photo information and AI analysis results.
+// Photo metadata model for storing photo information and AI analysis results.
 import '../../analysis/domain/analysis_result.dart';
 
 class PhotoMetadata {
@@ -37,7 +37,8 @@ class PhotoMetadata {
       thumbnailPath: json['thumbnailPath'] as String,
       capturedAt: DateTime.parse(json['capturedAt'] as String),
       analysisResult: json['analysisResult'] != null
-          ? AnalysisResult.fromJson(json['analysisResult'] as Map<String, dynamic>)
+          ? AnalysisResult.fromJson(
+              json['analysisResult'] as Map<String, dynamic>)
           : null,
       cameraSettings: json['cameraSettings'] != null
           ? Map<String, dynamic>.from(json['cameraSettings'] as Map)

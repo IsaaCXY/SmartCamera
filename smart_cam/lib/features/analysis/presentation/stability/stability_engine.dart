@@ -1,45 +1,53 @@
-/// Stability detection engine using Exponential Moving Average (EMA).
-/// Provides smooth stability scores that don't jump abruptly.
+import 'dart:math' as math;
+
 import '../../../../core/config/app_config.dart';
 import '../../../../core/utils/logger.dart';
 
 class StabilityEngine {
-  double _confidence = 0.0;
+  double _score = 0.0;
+  int _stableFrameCount = 0;
 
   /// Update stability score based on frame difference.
   /// Returns current stability (0.0 - 1.0).
-  ///
-  /// Higher frame difference = lower stability
-  /// Uses EMA smoothing to prevent sudden jumps
   double update(double frameDifference) {
-    // Validate input
-    if (frameDifference < 0 || frameDifference > 1) {
-      AppLogger.w('Invalid frame difference: $frameDifference', 'StabilityEngine');
-      return _confidence;
+    if (frameDifference.isNaN || frameDifference < 0 || frameDifference > 1) {
+      AppLogger.w(
+          'Invalid frame difference: $frameDifference', 'StabilityEngine');
+      return _score;
     }
 
-    // Convert frame difference to instant stability
-    // Lower difference = higher stability
-    double instantStability = 1.0 - frameDifference;
+    if (frameDifference >= AppConfig.motionFrameDiffThreshold) {
+      _stableFrameCount = 0;
+      _score = math.min(_score, AppConfig.movingScoreCap);
+    } else if (frameDifference <= AppConfig.stableFrameDiffThreshold) {
+      _stableFrameCount++;
+      final stableProgress = _stableFrameCount / AppConfig.requiredStableFrames;
+      _score = math.max(_score, stableProgress.clamp(0.0, 1.0));
+    } else {
+      _stableFrameCount = 0;
+      _score = math.min(_score, AppConfig.borderlineScoreCap);
+    }
 
-    // Apply EMA smoothing
-    // new_confidence = (α × new_value) + ((1-α) × old_confidence)
-    _confidence = (AppConfig.stabilityAlpha * instantStability) +
-                  ((1 - AppConfig.stabilityAlpha) * _confidence);
-
-    AppLogger.d('Stability: ${_confidence.toStringAsFixed(3)} (diff: ${frameDifference.toStringAsFixed(3)})', 'StabilityEngine');
-    return _confidence;
+    AppLogger.d(
+      'Stability: ${_score.toStringAsFixed(3)} '
+          '(diff: ${frameDifference.toStringAsFixed(3)}, stableFrames: $_stableFrameCount)',
+      'StabilityEngine',
+    );
+    return _score;
   }
 
   /// Current stability score (0.0 - 1.0)
-  double get score => _confidence;
+  double get score => _score;
 
   /// Whether the scene is currently stable
-  bool get isStable => _confidence > AppConfig.stabilityThreshold;
+  bool get isStable =>
+      _stableFrameCount >= AppConfig.requiredStableFrames &&
+      _score >= AppConfig.stabilityThreshold;
 
   /// Reset stability tracking
   void reset() {
-    _confidence = 0.0;
+    _score = 0.0;
+    _stableFrameCount = 0;
     AppLogger.d('Stability reset', 'StabilityEngine');
   }
 }

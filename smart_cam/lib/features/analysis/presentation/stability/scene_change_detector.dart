@@ -1,5 +1,5 @@
-/// Scene change detection using sliding window algorithm.
-/// Detects meaningful content changes (scene, subject, pose changes).
+// Scene change detection using sliding window algorithm.
+// Detects meaningful content changes (scene, subject, pose changes).
 import '../../../../core/config/app_config.dart';
 import '../../../../core/utils/logger.dart';
 
@@ -15,12 +15,14 @@ class SceneChangeDetector {
   double update(double frameDifference) {
     // Validate input
     if (frameDifference.isNaN) {
-      AppLogger.w('NaN frame difference, returning old score', 'SceneChangeDetector');
+      AppLogger.w(
+          'NaN frame difference, returning old score', 'SceneChangeDetector');
       return _currentScore;
     }
 
     if (frameDifference < 0 || frameDifference > 1) {
-      AppLogger.w('Invalid frame difference: $frameDifference', 'SceneChangeDetector');
+      AppLogger.w(
+          'Invalid frame difference: $frameDifference', 'SceneChangeDetector');
       return _currentScore;
     }
 
@@ -45,7 +47,9 @@ class SceneChangeDetector {
     // This normalizes the score: if avgDiff equals threshold, score = 1.0
     _currentScore = (avgDiff / AppConfig.sceneChangeThreshold).clamp(0.0, 1.0);
 
-    AppLogger.d('Scene change: ${_currentScore.toStringAsFixed(3)} (avg: ${avgDiff.toStringAsFixed(3)})', 'SceneChangeDetector');
+    AppLogger.d(
+        'Scene change: ${_currentScore.toStringAsFixed(3)} (avg: ${avgDiff.toStringAsFixed(3)})',
+        'SceneChangeDetector');
     return _currentScore;
   }
 
