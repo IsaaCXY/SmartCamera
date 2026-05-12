@@ -8,6 +8,7 @@ import '../../../core/utils/logger.dart';
 import '../../photo/domain/photo_metadata.dart';
 import '../../photo/presentation/photo_storage_service.dart';
 import '../../analysis/domain/analysis_result.dart';
+import 'image_preprocessor.dart';
 
 class CameraService extends ChangeNotifier {
   CameraController? _controller;
@@ -80,14 +81,14 @@ class CameraService extends ChangeNotifier {
       // Take picture
       final XFile file = await _controller!.takePicture();
 
-      // Read and resize image
       final bytes = await file.readAsBytes();
+      final processedBytes = ImagePreprocessor.preprocessForAnalysis(bytes);
 
-      // TODO: Implement image resizing to AppConfig.analysisImageWidth/Height
-      // For now, return original bytes (backend can handle resizing)
-
-      AppLogger.d('Frame captured: ${bytes.length} bytes', 'CameraService');
-      return bytes;
+      AppLogger.d(
+        'Frame captured: ${bytes.length} bytes, processed: ${processedBytes.length} bytes',
+        'CameraService',
+      );
+      return processedBytes;
     } catch (e) {
       AppLogger.e('Frame capture failed', 'CameraService', e);
       return null;

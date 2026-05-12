@@ -68,6 +68,7 @@ class SettingsService extends ChangeNotifier {
   /// Update custom base URL.
   void setCustomBaseUrl(String url) {
     _settings.customBaseUrl = url;
+    _resetApiValidationForCurrentConfig();
     notifyListeners();
     _saveSettings();
   }
@@ -75,6 +76,35 @@ class SettingsService extends ChangeNotifier {
   /// Update custom URL type.
   void setCustomUrlType(String type) {
     _settings.customUrlType = type;
+    _resetApiValidationForCurrentConfig();
+    notifyListeners();
+    _saveSettings();
+  }
+
+  void setCustomModel(String model) {
+    _settings.customModel = model;
+    _resetApiValidationForCurrentConfig();
+    notifyListeners();
+    _saveSettings();
+  }
+
+  void setAzureEndpoint(String endpoint) {
+    _settings.azureEndpoint = endpoint;
+    _resetApiValidationForCurrentConfig();
+    notifyListeners();
+    _saveSettings();
+  }
+
+  void setAzureDeployment(String deployment) {
+    _settings.azureDeployment = deployment;
+    _resetApiValidationForCurrentConfig();
+    notifyListeners();
+    _saveSettings();
+  }
+
+  void setAzureApiVersion(String apiVersion) {
+    _settings.azureApiVersion = apiVersion;
+    _resetApiValidationForCurrentConfig();
     notifyListeners();
     _saveSettings();
   }
@@ -86,8 +116,8 @@ class SettingsService extends ChangeNotifier {
       final settingsJson = prefs.getString(_storageKey);
 
       if (settingsJson != null) {
-        // Parse JSON string back to Map
-        final Map<String, dynamic> json = _decodeJson(settingsJson);
+        final Map<String, dynamic> json =
+            jsonDecode(settingsJson) as Map<String, dynamic>;
         _settings = AppSettings.fromJson(json);
         _resetApiValidationForCurrentConfig();
         AppLogger.i('Settings loaded from storage', 'SettingsService');
@@ -113,8 +143,7 @@ class SettingsService extends ChangeNotifier {
   Future<void> _saveSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final json = _settings.toJson();
-      final jsonString = _encodeJson(json);
+      final jsonString = jsonEncode(_settings.toJson());
 
       await prefs.setString(_storageKey, jsonString);
       AppLogger.d('Settings saved to storage', 'SettingsService');
@@ -146,52 +175,7 @@ class SettingsService extends ChangeNotifier {
         return await _testZhipuGlmConnection();
       }
 
-      // Simulate API call (replace with actual API call in production)
-      // For now, we'll do a basic validation
-      await Future.delayed(const Duration(milliseconds: 800));
-
-      // Basic validation
-      if (_settings.apiKey.length < 10) {
-        _setApiValidation(
-          ApiValidationStatus.invalid,
-          'API key appears to be invalid (too short)',
-        );
-        return {
-          'success': false,
-          'message': 'API key appears to be invalid (too short)',
-        };
-      }
-
-      // Simulate success based on provider
-      final provider = _settings.selectedProvider.toLowerCase();
-      String message = 'Connection successful!';
-
-      switch (provider) {
-        case 'openai':
-          message = 'OpenAI connection successful (GPT-4o)';
-          break;
-        case 'anthropic':
-          message = 'Anthropic connection successful (Claude 3)';
-          break;
-        case 'azure':
-          message = 'Azure OpenAI connection successful';
-          break;
-        case 'zhipu_glm':
-          message = '智谱 GLM connection successful';
-          break;
-        case 'custom':
-          message = 'Custom endpoint connection successful';
-          break;
-        default:
-          message = 'Connection successful!';
-      }
-
-      _setApiValidation(ApiValidationStatus.valid, message);
-      return {
-        'success': true,
-        'message': message,
-        'provider': _settings.selectedProvider,
-      };
+      return await _testChatConnection();
     } catch (e) {
       AppLogger.e('Connection test failed', 'SettingsService', e);
       _setApiValidation(ApiValidationStatus.invalid, e.toString());
@@ -259,6 +243,77 @@ class SettingsService extends ChangeNotifier {
     };
   }
 
+  Future<Map<String, dynamic>> _testChatConnection() async {
+    final provider = _settings.selectedProvider;
+    late final Uri uri;
+    late final Map<String, String> headers;
+    late final Map<String, dynamic> body;
+    late final String successMessage;
+
+    switch (provider) {
+      case 'openai':
+        uri = Uri.parse(AppConfig.openAiChatCompletionsUrl);
+        headers = _bearerHeaders(_settings.apiKey);
+        body = _openAiTextBody(AppConfig.openAiVisionModel);
+        successMessage = 'OpenAI connection successful';
+        break;
+      case 'anthropic':
+        uri = Uri.parse(AppConfig.anthropicMessagesUrl);
+        headers = _anthropicHeaders(_settings.apiKey);
+        body = _anthropicTextBody(AppConfig.anthropicVisionModel);
+        successMessage = 'Anthropic connection successful';
+        break;
+      case 'azure':
+        final endpoint = _requireConfig(_settings.azureEndpoint, 'Azure endpoint');
+        final deployment =
+            _requireConfig(_settings.azureDeployment, 'Azure deployment');
+        final apiVersion =
+            _requireConfig(_settings.azureApiVersion, 'Azure API version');
+        uri = Uri.parse(
+          '${_trimTrailingSlash(endpoint)}/openai/deployments/${Uri.encodeComponent(deployment)}/chat/completions?api-version=${Uri.encodeQueryComponent(apiVersion)}',
+        );
+        headers = _azureHeaders(_settings.apiKey);
+        body = _openAiTextBody(deployment);
+        successMessage = 'Azure OpenAI connection successful';
+        break;
+      case 'custom':
+        final baseUrl = _requireConfig(_settings.customBaseUrl, 'Custom base URL');
+        final model = _requireConfig(_settings.customModel, 'Custom model');
+        if (_settings.customUrlType == 'anthropic') {
+          uri = _appendEndpoint(baseUrl, 'messages');
+          headers = _anthropicHeaders(_settings.apiKey);
+          body = _anthropicTextBody(model);
+        } else {
+          uri = _appendEndpoint(baseUrl, 'chat/completions');
+          headers = _bearerHeaders(_settings.apiKey);
+          body = _openAiTextBody(model);
+        }
+        successMessage = 'Custom endpoint connection successful';
+        break;
+      default:
+        final message = 'Unsupported provider: $provider';
+        _setApiValidation(ApiValidationStatus.invalid, message);
+        return {'success': false, 'message': message};
+    }
+
+    final response = await _client
+        .post(uri, headers: headers, body: jsonEncode(body))
+        .timeout(AppConfig.apiTimeout);
+
+    if (response.statusCode != 200) {
+      final message = '$successMessage failed: ${response.statusCode}';
+      _setApiValidation(ApiValidationStatus.invalid, message);
+      return {'success': false, 'message': message};
+    }
+
+    _setApiValidation(ApiValidationStatus.valid, successMessage);
+    return {
+      'success': true,
+      'message': successMessage,
+      'provider': provider,
+    };
+  }
+
   /// Clear all settings (reset to defaults).
   Future<void> clearSettings() async {
     try {
@@ -271,67 +326,6 @@ class SettingsService extends ChangeNotifier {
     } catch (e) {
       AppLogger.e('Failed to clear settings', 'SettingsService', e);
     }
-  }
-
-  /// Helper method to encode JSON.
-  String _encodeJson(Map<String, dynamic> json) {
-    final buffer = StringBuffer();
-    buffer.write('{');
-    bool first = true;
-    json.forEach((key, value) {
-      if (!first) buffer.write(',');
-      buffer.write('"$key":');
-      if (value is String) {
-        buffer.write('"${_escapeString(value)}"');
-      } else if (value is bool) {
-        buffer.write(value ? 'true' : 'false');
-      } else if (value is num) {
-        buffer.write(value);
-      }
-      first = false;
-    });
-    buffer.write('}');
-    return buffer.toString();
-  }
-
-  /// Helper method to decode JSON.
-  Map<String, dynamic> _decodeJson(String jsonString) {
-    final Map<String, dynamic> result = {};
-    final content =
-        jsonString.substring(1, jsonString.length - 1); // Remove { }
-
-    if (content.isEmpty) return result;
-
-    final pairs = content.split(',');
-    for (final pair in pairs) {
-      final colonIndex = pair.indexOf(':');
-      if (colonIndex == -1) continue;
-
-      final key = pair.substring(1, colonIndex - 1); // Remove quotes
-      final value = pair.substring(colonIndex + 1).trim();
-
-      if (value == 'true') {
-        result[key] = true;
-      } else if (value == 'false') {
-        result[key] = false;
-      } else if (value.startsWith('"')) {
-        result[key] = value.substring(1, value.length - 1); // Remove quotes
-      } else {
-        result[key] = value;
-      }
-    }
-
-    return result;
-  }
-
-  /// Escape special characters in JSON strings.
-  String _escapeString(String value) {
-    return value
-        .replaceAll('\\', '\\\\')
-        .replaceAll('"', '\\"')
-        .replaceAll('\n', '\\n')
-        .replaceAll('\r', '\\r')
-        .replaceAll('\t', '\\t');
   }
 
   void _resetApiValidationForCurrentConfig() {
@@ -348,6 +342,76 @@ class SettingsService extends ChangeNotifier {
     _apiValidationStatus = status;
     _apiValidationMessage = message;
     notifyListeners();
+  }
+
+  Map<String, String> _bearerHeaders(String apiKey) {
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $apiKey',
+    };
+  }
+
+  Map<String, String> _azureHeaders(String apiKey) {
+    return {
+      'Content-Type': 'application/json',
+      'api-key': apiKey,
+    };
+  }
+
+  Map<String, String> _anthropicHeaders(String apiKey) {
+    return {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': AppConfig.anthropicVersion,
+    };
+  }
+
+  Map<String, dynamic> _openAiTextBody(String model) {
+    return {
+      'model': model,
+      'messages': [
+        {
+          'role': 'user',
+          'content': [
+            {'type': 'text', 'text': 'Reply exactly OK to confirm connectivity.'},
+          ],
+        },
+      ],
+    };
+  }
+
+  Map<String, dynamic> _anthropicTextBody(String model) {
+    return {
+      'model': model,
+      'max_tokens': 16,
+      'messages': [
+        {
+          'role': 'user',
+          'content': [
+            {'type': 'text', 'text': 'Reply exactly OK to confirm connectivity.'},
+          ],
+        },
+      ],
+    };
+  }
+
+  String _requireConfig(String value, String name) {
+    if (value.trim().isEmpty) {
+      throw Exception('$name is required');
+    }
+    return value.trim();
+  }
+
+  Uri _appendEndpoint(String baseUrl, String suffix) {
+    final trimmed = _trimTrailingSlash(baseUrl);
+    if (trimmed.endsWith(suffix)) {
+      return Uri.parse(trimmed);
+    }
+    return Uri.parse('$trimmed/$suffix');
+  }
+
+  String _trimTrailingSlash(String value) {
+    return value.endsWith('/') ? value.substring(0, value.length - 1) : value;
   }
 
   @override

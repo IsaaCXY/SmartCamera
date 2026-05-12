@@ -15,6 +15,11 @@ class _SettingsPageState extends State<SettingsPage> {
   String? _testMessage;
   bool? _testSuccess;
   late TextEditingController _apiKeyController;
+  late TextEditingController _customBaseUrlController;
+  late TextEditingController _customModelController;
+  late TextEditingController _azureEndpointController;
+  late TextEditingController _azureDeploymentController;
+  late TextEditingController _azureApiVersionController;
 
   @override
   void initState() {
@@ -22,11 +27,26 @@ class _SettingsPageState extends State<SettingsPage> {
     final settingsService = context.read<SettingsService>();
     _apiKeyController =
         TextEditingController(text: settingsService.settings.apiKey);
+    _customBaseUrlController =
+        TextEditingController(text: settingsService.settings.customBaseUrl);
+    _customModelController =
+        TextEditingController(text: settingsService.settings.customModel);
+    _azureEndpointController =
+        TextEditingController(text: settingsService.settings.azureEndpoint);
+    _azureDeploymentController =
+        TextEditingController(text: settingsService.settings.azureDeployment);
+    _azureApiVersionController =
+        TextEditingController(text: settingsService.settings.azureApiVersion);
   }
 
   @override
   void dispose() {
     _apiKeyController.dispose();
+    _customBaseUrlController.dispose();
+    _customModelController.dispose();
+    _azureEndpointController.dispose();
+    _azureDeploymentController.dispose();
+    _azureApiVersionController.dispose();
     super.dispose();
   }
 
@@ -51,6 +71,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
           // Custom Provider Configuration (only shown when custom is selected)
           _buildCustomProviderSection(context),
+
+          // Azure Provider Configuration (only shown when azure is selected)
+          _buildAzureProviderSection(context),
 
           const Divider(height: 32),
 
@@ -167,6 +190,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
         // Base URL Input
         TextField(
+          controller: _customBaseUrlController,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
             hintText: 'https://api.example.com/v1',
@@ -175,6 +199,20 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           onChanged: (value) {
             settingsService.setCustomBaseUrl(value);
+          },
+        ),
+        const SizedBox(height: 16),
+
+        TextField(
+          controller: _customModelController,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: 'gpt-4.1-mini',
+            prefixIcon: Icon(Icons.smart_toy),
+            labelText: 'Model',
+          ),
+          onChanged: (value) {
+            settingsService.setCustomModel(value);
           },
         ),
         const SizedBox(height: 16),
@@ -207,6 +245,67 @@ class _SettingsPageState extends State<SettingsPage> {
         Text(
           'Configure your custom endpoint. Select the API format your endpoint uses.',
           style: TextStyle(color: Colors.grey[600], fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAzureProviderSection(BuildContext context) {
+    final settingsService = context.watch<SettingsService>();
+    final currentProvider = settingsService.settings.selectedProvider;
+
+    if (currentProvider != 'azure') {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Azure OpenAI Configuration',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _azureEndpointController,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: 'https://your-resource.openai.azure.com',
+            prefixIcon: Icon(Icons.cloud),
+            labelText: 'Endpoint',
+          ),
+          onChanged: (value) {
+            settingsService.setAzureEndpoint(value);
+          },
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _azureDeploymentController,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: 'your-vision-deployment',
+            prefixIcon: Icon(Icons.smart_toy),
+            labelText: 'Deployment',
+          ),
+          onChanged: (value) {
+            settingsService.setAzureDeployment(value);
+          },
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _azureApiVersionController,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: '2024-02-15-preview',
+            prefixIcon: Icon(Icons.api),
+            labelText: 'API Version',
+          ),
+          onChanged: (value) {
+            settingsService.setAzureApiVersion(value);
+          },
         ),
       ],
     );

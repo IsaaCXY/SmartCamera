@@ -71,5 +71,59 @@ void main() {
       expect(service.apiValidationStatus, ApiValidationStatus.invalid);
       expect(service.apiValidationMessage, contains('401'));
     });
+
+    test('tests openai connection with real chat completion request', () async {
+      SharedPreferences.setMockInitialValues({});
+
+      late http.Request capturedRequest;
+      late Map<String, dynamic> capturedBody;
+
+      final client = MockClient((request) async {
+        capturedRequest = request;
+        capturedBody = jsonDecode(request.body) as Map<String, dynamic>;
+        return http.Response(
+          jsonEncode({
+            'choices': [
+              {
+                'message': {'content': 'OK'},
+              },
+            ],
+          }),
+          200,
+        );
+      });
+
+      final service = SettingsService(client: client);
+      service.setProvider('openai');
+      service.setApiKey('openai-key');
+
+      final result = await service.testConnection();
+
+      expect(result['success'], isTrue);
+      expect(result['message'], 'OpenAI connection successful');
+      expect(
+        capturedRequest.url.toString(),
+        'https://api.openai.com/v1/chat/completions',
+      );
+      expect(capturedRequest.headers['Authorization'], 'Bearer openai-key');
+      expect(capturedBody['model'], 'gpt-4.1-mini');
+    });
+
+    test('requires azure endpoint and deployment before testing connection',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+
+      final service = SettingsService(client: MockClient((request) async {
+        fail('Azure request should not be sent when config is missing');
+      }));
+      service.setProvider('azure');
+      service.setApiKey('azure-key');
+
+      final result = await service.testConnection();
+
+      expect(result['success'], isFalse);
+      expect(result['message'], contains('Azure endpoint is required'));
+      expect(service.apiValidationStatus, ApiValidationStatus.invalid);
+    });
   });
 }

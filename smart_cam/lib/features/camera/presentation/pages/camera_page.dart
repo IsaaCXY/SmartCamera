@@ -99,6 +99,9 @@ class _CameraPageState extends State<CameraPage> {
           // Camera preview
           _buildCameraPreview(),
 
+          // Rule-of-thirds grid
+          _buildGridLinesOverlay(),
+
           // AI suggestions overlay
           _buildOverlay(),
 
@@ -120,6 +123,17 @@ class _CameraPageState extends State<CameraPage> {
         }
 
         return CameraPreview(cameraService.controller!);
+      },
+    );
+  }
+
+  Widget _buildGridLinesOverlay() {
+    return Consumer<SettingsService>(
+      builder: (context, settingsService, child) {
+        if (!settingsService.settings.showGridLines) {
+          return const SizedBox.shrink();
+        }
+        return const RuleOfThirdsGridOverlay();
       },
     );
   }
@@ -739,4 +753,57 @@ class _CameraPageState extends State<CameraPage> {
       }
     });
   }
+}
+
+class RuleOfThirdsGridOverlay extends StatelessWidget {
+  const RuleOfThirdsGridOverlay({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: CustomPaint(
+        key: const Key('rule_of_thirds_grid'),
+        painter: _RuleOfThirdsGridPainter(),
+        size: Size.infinite,
+      ),
+    );
+  }
+}
+
+class _RuleOfThirdsGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.35)
+      ..strokeWidth = 1;
+
+    final firstVertical = size.width / 3;
+    final secondVertical = size.width * 2 / 3;
+    final firstHorizontal = size.height / 3;
+    final secondHorizontal = size.height * 2 / 3;
+
+    canvas.drawLine(
+      Offset(firstVertical, 0),
+      Offset(firstVertical, size.height),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(secondVertical, 0),
+      Offset(secondVertical, size.height),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(0, firstHorizontal),
+      Offset(size.width, firstHorizontal),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(0, secondHorizontal),
+      Offset(size.width, secondHorizontal),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
