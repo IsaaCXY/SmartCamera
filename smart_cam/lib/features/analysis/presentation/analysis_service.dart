@@ -43,8 +43,19 @@ class AnalysisService extends ChangeNotifier {
   /// Analyze current frame if conditions are met.
   /// Returns true if analysis was started.
   Future<bool> analyzeIfReady(Uint8List imageData) async {
+    return _runAnalysis(imageData, respectCooldown: true);
+  }
+
+  Future<bool> analyzeNow(Uint8List imageData) async {
+    return _runAnalysis(imageData, respectCooldown: false);
+  }
+
+  Future<bool> _runAnalysis(
+    Uint8List imageData, {
+    required bool respectCooldown,
+  }) async {
     // Check cooldown
-    if (_lastAnalysisTime != null) {
+    if (respectCooldown && _lastAnalysisTime != null) {
       final elapsed = DateTime.now().difference(_lastAnalysisTime!);
       if (elapsed < AppConfig.analysisCooldown) {
         AppLogger.d('Skipping analysis: cooldown active', 'AnalysisService');

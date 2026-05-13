@@ -58,6 +58,12 @@ class SettingsService extends ChangeNotifier {
     _saveSettings();
   }
 
+  void toggleManualAnalysisTrigger(bool enabled) {
+    _settings.manualAnalysisTrigger = enabled;
+    notifyListeners();
+    _saveSettings();
+  }
+
   /// Toggle grid lines.
   void toggleGridLines(bool show) {
     _settings.showGridLines = show;
@@ -264,7 +270,8 @@ class SettingsService extends ChangeNotifier {
         successMessage = 'Anthropic connection successful';
         break;
       case 'azure':
-        final endpoint = _requireConfig(_settings.azureEndpoint, 'Azure endpoint');
+        final endpoint =
+            _requireConfig(_settings.azureEndpoint, 'Azure endpoint');
         final deployment =
             _requireConfig(_settings.azureDeployment, 'Azure deployment');
         final apiVersion =
@@ -277,7 +284,8 @@ class SettingsService extends ChangeNotifier {
         successMessage = 'Azure OpenAI connection successful';
         break;
       case 'custom':
-        final baseUrl = _requireConfig(_settings.customBaseUrl, 'Custom base URL');
+        final baseUrl =
+            _requireConfig(_settings.customBaseUrl, 'Custom base URL');
         final model = _requireConfig(_settings.customModel, 'Custom model');
         if (_settings.customUrlType == 'anthropic') {
           uri = _appendEndpoint(baseUrl, 'messages');
@@ -373,7 +381,10 @@ class SettingsService extends ChangeNotifier {
         {
           'role': 'user',
           'content': [
-            {'type': 'text', 'text': 'Reply exactly OK to confirm connectivity.'},
+            {
+              'type': 'text',
+              'text': 'Reply exactly OK to confirm connectivity.'
+            },
           ],
         },
       ],
@@ -388,7 +399,10 @@ class SettingsService extends ChangeNotifier {
         {
           'role': 'user',
           'content': [
-            {'type': 'text', 'text': 'Reply exactly OK to confirm connectivity.'},
+            {
+              'type': 'text',
+              'text': 'Reply exactly OK to confirm connectivity.'
+            },
           ],
         },
       ],

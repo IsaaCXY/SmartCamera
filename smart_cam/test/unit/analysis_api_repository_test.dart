@@ -24,6 +24,7 @@ void main() {
               {
                 'message': {
                   'content': jsonEncode({
+                    'scene_description': '一位人物站在窗边，背景有柔和自然光',
                     'shooting_advice': '靠近主体',
                     'camera_params': {'iso': '100'},
                     'filter_suggestions': ['自然'],
@@ -53,10 +54,12 @@ void main() {
       expect(capturedBody['model'], 'gpt-4.1-mini');
 
       final content = capturedBody['messages'].first['content'] as List;
+      expect(content.first['text'], contains('scene_description'));
       expect(content.first['text'], contains('shooting_advice'));
       expect(content.first['text'], isNot(contains('edit_params')));
       expect(content.last['image_url']['url'],
           'data:image/jpeg;base64,${base64Encode([1, 2])}');
+      expect(result.sceneDescription, '一位人物站在窗边，背景有柔和自然光');
       expect(result.shootingAdvice, '靠近主体');
       expect(result.editParams, isEmpty);
     });
@@ -298,7 +301,8 @@ void main() {
       expect(content.last['type'], 'text');
       expect(content.last['text'], contains('shooting_advice'));
       expect(content.last['text'], isNot(contains('edit_params')));
-      expect(content.last['text'], contains('Return all text values in Chinese'));
+      expect(
+          content.last['text'], contains('Return all text values in Chinese'));
 
       expect(result.shootingAdvice, 'Move closer to the subject');
       expect(result.cameraParams['iso'], '100');

@@ -186,7 +186,8 @@ class AnalysisApiRepository implements AnalysisRepository {
         .timeout(AppConfig.apiTimeout);
 
     if (response.statusCode != 200) {
-      throw Exception('$label API error: ${response.statusCode} - ${response.body}');
+      throw Exception(
+          '$label API error: ${response.statusCode} - ${response.body}');
     }
 
     final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
@@ -233,7 +234,8 @@ class AnalysisApiRepository implements AnalysisRepository {
         .timeout(AppConfig.apiTimeout);
 
     if (response.statusCode != 200) {
-      throw Exception('$label API error: ${response.statusCode} - ${response.body}');
+      throw Exception(
+          '$label API error: ${response.statusCode} - ${response.body}');
     }
 
     final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
@@ -287,7 +289,10 @@ class AnalysisApiRepository implements AnalysisRepository {
     final key = _requireNonEmpty(apiKey, 'API key');
     return {
       'Content-Type': 'application/json',
-      if (useAzureApiKeyHeader) 'api-key': key else 'Authorization': 'Bearer $key',
+      if (useAzureApiKeyHeader)
+        'api-key': key
+      else
+        'Authorization': 'Bearer $key',
     };
   }
 
@@ -306,8 +311,9 @@ class AnalysisApiRepository implements AnalysisRepository {
   }
 
   Uri _appendEndpoint(String baseUrl, String suffix) {
-    final trimmed =
-        baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    final trimmed = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
     if (trimmed.endsWith(suffix)) {
       return Uri.parse(trimmed);
     }
@@ -382,6 +388,7 @@ class AnalysisApiRepository implements AnalysisRepository {
   static const String _shootingAdvicePrompt = '''
 You are a professional photography assistant. Analyze the camera frame and return only valid JSON with this exact shape:
 {
+  "scene_description": "one concise objective description of the visible image content",
   "shooting_advice": "one concise composition, lighting, or angle suggestion",
   "camera_params": {
     "iso": "recommended ISO",

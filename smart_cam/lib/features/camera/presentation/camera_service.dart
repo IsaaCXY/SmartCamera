@@ -1,6 +1,7 @@
 // Camera service for handling camera operations.
 // Manages camera initialization, preview, and image capture.
 import 'dart:async';
+import 'dart:ui';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
@@ -29,6 +30,17 @@ class CameraService extends ChangeNotifier {
 
   /// Current flash mode.
   FlashMode get flashMode => _flashMode;
+
+  static Offset normalizeFocusPoint(Offset localPosition, Size previewSize) {
+    if (previewSize.width <= 0 || previewSize.height <= 0) {
+      return Offset.zero;
+    }
+
+    return Offset(
+      (localPosition.dx / previewSize.width).clamp(0.0, 1.0),
+      (localPosition.dy / previewSize.height).clamp(0.0, 1.0),
+    );
+  }
 
   /// Initialize camera with back camera by default.
   Future<void> initialize() async {
@@ -186,6 +198,22 @@ class CameraService extends ChangeNotifier {
     } catch (e) {
       AppLogger.e('Failed to set flash mode', 'CameraService', e);
       rethrow;
+    }
+  }
+
+  Future<void> focusAt(Offset localPosition, Size previewSize) async {
+    if (!_isInitialized || _controller == null) {
+      return;
+    }
+
+    final focusPoint = normalizeFocusPoint(localPosition, previewSize);
+
+    try {
+      await _controller!.setFocusPoint(focusPoint);
+      await _controller!.setExposurePoint(focusPoint);
+      AppLogger.i('Focus point set to $focusPoint', 'CameraService');
+    } catch (e) {
+      AppLogger.e('Failed to set focus point', 'CameraService', e);
     }
   }
 

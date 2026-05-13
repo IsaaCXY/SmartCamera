@@ -1,11 +1,13 @@
 /// Domain model for AI analysis results.
 class AnalysisResult {
+  final String sceneDescription;
   final String shootingAdvice;
   final Map<String, dynamic> cameraParams;
   final List<String> filterSuggestions;
   final Map<String, dynamic> editParams;
 
   AnalysisResult({
+    this.sceneDescription = '',
     required this.shootingAdvice,
     required this.cameraParams,
     required this.filterSuggestions,
@@ -14,6 +16,7 @@ class AnalysisResult {
 
   factory AnalysisResult.fromJson(Map<String, dynamic> json) {
     return AnalysisResult(
+      sceneDescription: json['scene_description'] ?? '',
       shootingAdvice: json['shooting_advice'] ?? '',
       cameraParams: Map<String, dynamic>.from(json['camera_params'] ?? {}),
       filterSuggestions: List<String>.from(json['filter_suggestions'] ?? []),
@@ -24,6 +27,7 @@ class AnalysisResult {
   /// Convert AnalysisResult to JSON
   Map<String, dynamic> toJson() {
     return {
+      'scene_description': sceneDescription,
       'shooting_advice': shootingAdvice,
       'camera_params': cameraParams,
       'filter_suggestions': filterSuggestions,
@@ -33,6 +37,6 @@ class AnalysisResult {
 
   @override
   String toString() {
-    return 'AnalysisResult(advice: $shootingAdvice, params: $cameraParams)';
+    return 'AnalysisResult(scene: $sceneDescription, advice: $shootingAdvice, params: $cameraParams)';
   }
 }

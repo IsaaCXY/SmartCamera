@@ -337,6 +337,15 @@ class _SettingsPageState extends State<SettingsPage> {
           },
         ),
 
+        SwitchListTile(
+          title: const Text('Manual Realtime Analysis'),
+          subtitle: const Text('Long-press shutter to analyze current frame'),
+          value: settings.manualAnalysisTrigger,
+          onChanged: (value) {
+            settingsService.toggleManualAnalysisTrigger(value);
+          },
+        ),
+
         // Grid Lines Toggle
         SwitchListTile(
           title: const Text('Show Grid Lines'),

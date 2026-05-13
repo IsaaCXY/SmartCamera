@@ -9,6 +9,7 @@ class AppSettings {
   String azureDeployment;
   String azureApiVersion;
   bool enableAutoAnalysis;
+  bool manualAnalysisTrigger;
   bool showGridLines;
 
   AppSettings({
@@ -21,6 +22,7 @@ class AppSettings {
     this.azureDeployment = '',
     this.azureApiVersion = '2024-02-15-preview',
     this.enableAutoAnalysis = true,
+    this.manualAnalysisTrigger = false,
     this.showGridLines = true,
   });
 
@@ -36,6 +38,7 @@ class AppSettings {
       azureDeployment: json['azure_deployment'] ?? '',
       azureApiVersion: json['azure_api_version'] ?? '2024-02-15-preview',
       enableAutoAnalysis: json['auto_analysis'] ?? true,
+      manualAnalysisTrigger: json['manual_analysis_trigger'] ?? false,
       showGridLines: json['grid_lines'] ?? true,
     );
   }
@@ -52,6 +55,7 @@ class AppSettings {
       'azure_deployment': azureDeployment,
       'azure_api_version': azureApiVersion,
       'auto_analysis': enableAutoAnalysis,
+      'manual_analysis_trigger': manualAnalysisTrigger,
       'grid_lines': showGridLines,
     };
   }

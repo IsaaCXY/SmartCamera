@@ -78,5 +78,25 @@ void main() {
       expect(service.lastRunMessage, contains('network failed'));
       expect(service.lastErrorMessage, contains('network failed'));
     });
+
+    test('manual analysis bypasses cooldown', () async {
+      var requestCount = 0;
+      final service = AnalysisService(
+        repository: _FakeAnalysisRepository((_) async {
+          requestCount += 1;
+          return AnalysisResult(
+            shootingAdvice: '保持水平',
+            cameraParams: const {},
+            filterSuggestions: const [],
+            editParams: const {},
+          );
+        }),
+      );
+
+      expect(await service.analyzeIfReady(Uint8List.fromList([1])), isTrue);
+      expect(await service.analyzeNow(Uint8List.fromList([2])), isTrue);
+
+      expect(requestCount, 2);
+    });
   });
 }

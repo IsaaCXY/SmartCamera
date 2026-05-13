@@ -11,6 +11,7 @@ void main() {
       thumbnailPath: '/tmp/thumb.jpg',
       capturedAt: DateTime.parse('2026-05-12T10:00:00Z'),
       analysisResult: AnalysisResult(
+        sceneDescription: '桌面上有一杯咖啡和一本书',
         shootingAdvice: '靠近主体',
         cameraParams: {'iso': '100'},
         filterSuggestions: ['自然'],
@@ -24,6 +25,7 @@ void main() {
 
     final restored = PhotoMetadata.fromJson(photo.toJson());
 
+    expect(restored.analysisResult!.sceneDescription, '桌面上有一杯咖啡和一本书');
     expect(restored.analysisResult!.editParams, isEmpty);
     expect(restored.editSuggestion!.filterSuggestions, ['胶片']);
     expect(restored.editSuggestion!.editParams['brightness'], '+5');
@@ -36,6 +38,7 @@ void main() {
       'thumbnailPath': '/tmp/thumb.jpg',
       'capturedAt': '2026-05-12T10:00:00Z',
       'analysisResult': {
+        'scene_description': '一条街道和远处建筑',
         'shooting_advice': '保持水平',
         'camera_params': <String, dynamic>{},
         'filter_suggestions': <String>[],
@@ -43,6 +46,7 @@ void main() {
     });
 
     expect(restored.editSuggestion, isNull);
+    expect(restored.analysisResult!.sceneDescription, '一条街道和远处建筑');
     expect(restored.analysisResult!.editParams, isEmpty);
   });
 }

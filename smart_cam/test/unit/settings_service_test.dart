@@ -125,5 +125,15 @@ void main() {
       expect(result['message'], contains('Azure endpoint is required'));
       expect(service.apiValidationStatus, ApiValidationStatus.invalid);
     });
+
+    test('toggles manual analysis trigger setting', () {
+      SharedPreferences.setMockInitialValues({});
+
+      final service = SettingsService();
+
+      expect(service.settings.manualAnalysisTrigger, isFalse);
+      service.toggleManualAnalysisTrigger(true);
+      expect(service.settings.manualAnalysisTrigger, isTrue);
+    });
   });
 }

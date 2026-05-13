@@ -1,6 +1,7 @@
 // Camera page with real-time AI suggestions overlay.
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,13 +22,23 @@ class CameraPage extends StatefulWidget {
   State<CameraPage> createState() => _CameraPageState();
 }
 
-class _CameraPageState extends State<CameraPage> {
+class _CameraPageState extends State<CameraPage>
+    with SingleTickerProviderStateMixin {
   Timer? _frameTimer;
+  Timer? _focusIndicatorTimer;
+  Timer? _manualAnalysisEffectTimer;
+  late final AnimationController _neonController;
   double _shutterScale = 1.0;
+  Offset? _focusIndicatorPosition;
+  bool _showManualAnalysisEffect = false;
 
   @override
   void initState() {
     super.initState();
+    _neonController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
     _setSystemUIOverlayStyle();
     _startFrameMonitoring();
   }
@@ -49,6 +60,9 @@ class _CameraPageState extends State<CameraPage> {
   @override
   void dispose() {
     _frameTimer?.cancel();
+    _focusIndicatorTimer?.cancel();
+    _manualAnalysisEffectTimer?.cancel();
+    _neonController.dispose();
     // 恢复系统栏
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
@@ -65,7 +79,8 @@ class _CameraPageState extends State<CameraPage> {
         final settingsService = context.read<SettingsService>();
         final cameraService = context.read<CameraService>();
 
-        if (!settingsService.settings.enableAutoAnalysis) {
+        if (!settingsService.settings.enableAutoAnalysis ||
+            settingsService.settings.manualAnalysisTrigger) {
           return;
         }
 
@@ -96,11 +111,8 @@ class _CameraPageState extends State<CameraPage> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Camera preview
-          _buildCameraPreview(),
-
-          // Rule-of-thirds grid
-          _buildGridLinesOverlay(),
+          // Camera preview and tap-to-focus feedback
+          _buildInteractivePreview(),
 
           // AI suggestions overlay
           _buildOverlay(),
@@ -110,6 +122,11 @@ class _CameraPageState extends State<CameraPage> {
 
           // Controls (bottom)
           _buildControls(),
+
+          if (_showManualAnalysisEffect)
+            Positioned.fill(
+              child: NeonAnalysisBorder(animation: _neonController),
+            ),
         ],
       ),
     );
@@ -125,6 +142,49 @@ class _CameraPageState extends State<CameraPage> {
         return CameraPreview(cameraService.controller!);
       },
     );
+  }
+
+  Widget _buildInteractivePreview() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final previewSize = Size(constraints.maxWidth, constraints.maxHeight);
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (details) {
+            _handleFocusTap(details.localPosition, previewSize);
+          },
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _buildCameraPreview(),
+              _buildGridLinesOverlay(),
+              FocusTapIndicator(
+                position: _focusIndicatorPosition,
+                previewSize: previewSize,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _handleFocusTap(Offset localPosition, Size previewSize) {
+    setState(() {
+      _focusIndicatorPosition = localPosition;
+    });
+
+    _focusIndicatorTimer?.cancel();
+    _focusIndicatorTimer = Timer(const Duration(milliseconds: 900), () {
+      if (mounted) {
+        setState(() {
+          _focusIndicatorPosition = null;
+        });
+      }
+    });
+
+    unawaited(
+        context.read<CameraService>().focusAt(localPosition, previewSize));
   }
 
   Widget _buildGridLinesOverlay() {
@@ -315,6 +375,17 @@ class _CameraPageState extends State<CameraPage> {
                 _shutterScale = 1.0;
               });
             },
+            onLongPressStart: (_) {
+              setState(() {
+                _shutterScale = 0.78;
+              });
+              _handleManualAnalysis(cameraService);
+            },
+            onLongPressEnd: (_) {
+              setState(() {
+                _shutterScale = 1.0;
+              });
+            },
             onTap: () async {
               // 先读取服务，避免 async gap 问题
               final storageService = context.read<PhotoStorageService>();
@@ -354,6 +425,46 @@ class _CameraPageState extends State<CameraPage> {
         );
       },
     );
+  }
+
+  void _handleManualAnalysis(CameraService cameraService) {
+    final settingsService = context.read<SettingsService>();
+    if (!settingsService.settings.manualAnalysisTrigger) {
+      return;
+    }
+
+    setState(() {
+      _showManualAnalysisEffect = true;
+    });
+    _neonController.repeat();
+    _manualAnalysisEffectTimer?.cancel();
+    _manualAnalysisEffectTimer = Timer(
+      const Duration(milliseconds: 1400),
+      _hideManualAnalysisEffect,
+    );
+
+    unawaited(_triggerManualAnalysis(cameraService));
+  }
+
+  Future<void> _triggerManualAnalysis(CameraService cameraService) async {
+    final analysisService = context.read<AnalysisService>();
+    final frame = await cameraService.captureFrameForAnalysis();
+    if (frame == null) {
+      return;
+    }
+
+    await analysisService.analyzeNow(frame);
+  }
+
+  void _hideManualAnalysisEffect() {
+    if (!mounted) {
+      return;
+    }
+
+    _neonController.stop();
+    setState(() {
+      _showManualAnalysisEffect = false;
+    });
   }
 
   Widget _buildGalleryButton() {
@@ -602,6 +713,9 @@ class _CameraPageState extends State<CameraPage> {
     AnalysisService analysisService,
     SettingsService settingsService,
   ) {
+    final sceneDescription =
+        analysisService.currentResult?.sceneDescription.trim();
+
     return [
       const SizedBox(height: 4),
       _buildDebugLine(
@@ -615,6 +729,8 @@ class _CameraPageState extends State<CameraPage> {
         '返回: ${_formatAnalysisResultStatus(analysisService)}',
         maxLines: 2,
       ),
+      if (sceneDescription != null && sceneDescription.isNotEmpty)
+        _buildDebugLine('画面描述: $sceneDescription', maxLines: 2),
     ];
   }
 
@@ -767,6 +883,135 @@ class RuleOfThirdsGridOverlay extends StatelessWidget {
         size: Size.infinite,
       ),
     );
+  }
+}
+
+class FocusTapIndicator extends StatelessWidget {
+  const FocusTapIndicator({
+    super.key,
+    required this.position,
+    required this.previewSize,
+  });
+
+  static const double indicatorSize = 72;
+
+  final Offset? position;
+  final Size previewSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentPosition = position;
+    if (currentPosition == null) {
+      return const SizedBox.shrink();
+    }
+
+    final maxLeft = previewSize.width > indicatorSize
+        ? previewSize.width - indicatorSize
+        : 0.0;
+    final maxTop = previewSize.height > indicatorSize
+        ? previewSize.height - indicatorSize
+        : 0.0;
+    final left = (currentPosition.dx - indicatorSize / 2).clamp(0.0, maxLeft);
+    final top = (currentPosition.dy - indicatorSize / 2).clamp(0.0, maxTop);
+
+    return Positioned(
+      left: left,
+      top: top,
+      child: IgnorePointer(
+        child: Container(
+          key: const Key('focus_tap_indicator'),
+          width: indicatorSize,
+          height: indicatorSize,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.amberAccent.withValues(alpha: 0.95),
+              width: 2,
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Center(
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: Colors.amberAccent.withValues(alpha: 0.95),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class NeonAnalysisBorder extends StatelessWidget {
+  const NeonAnalysisBorder({
+    super.key,
+    required this.animation,
+  });
+
+  final Animation<double> animation;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: animation,
+        builder: (context, child) {
+          return CustomPaint(
+            key: const Key('manual_analysis_neon_border'),
+            painter: _NeonAnalysisBorderPainter(animation.value),
+            child: const SizedBox.expand(),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _NeonAnalysisBorderPainter extends CustomPainter {
+  const _NeonAnalysisBorderPainter(this.progress);
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const strokeWidth = 5.0;
+    final rect = Offset.zero & size;
+    final borderRect = rect.deflate(strokeWidth / 2);
+    final rrect = RRect.fromRectAndRadius(
+      borderRect,
+      const Radius.circular(18),
+    );
+    final shader = SweepGradient(
+      colors: const [
+        Color(0xFFFF2BD6),
+        Color(0xFF18FFFF),
+        Color(0xFFFFF176),
+        Color(0xFF7C4DFF),
+        Color(0xFFFF2BD6),
+      ],
+      transform: GradientRotation(progress * math.pi * 2),
+    ).createShader(rect);
+
+    final glowPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12
+      ..shader = shader
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    final borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..shader = shader;
+
+    canvas.drawRRect(rrect, glowPaint);
+    canvas.drawRRect(rrect, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(_NeonAnalysisBorderPainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }
 
