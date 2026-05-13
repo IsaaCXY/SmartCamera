@@ -22,7 +22,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.example.smart_cam"
-    compileSdk flutter.compileSdkVersion
+    compileSdk 36
     ndkVersion "27.3.13750724"
 
     compileOptions {
