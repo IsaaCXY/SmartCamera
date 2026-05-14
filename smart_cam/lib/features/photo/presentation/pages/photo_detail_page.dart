@@ -4,9 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../photo_storage_service.dart';
 import '../../../photo/domain/photo_metadata.dart';
+import '../../../analysis/presentation/analysis_service.dart';
 
-class PhotoDetailPage extends StatelessWidget {
+class PhotoDetailPage extends StatefulWidget {
   const PhotoDetailPage({super.key});
+
+  @override
+  State<PhotoDetailPage> createState() => _PhotoDetailPageState();
+}
+
+class _PhotoDetailPageState extends State<PhotoDetailPage> {
+  bool _isRequestingEditSuggestion = false;
+  String? _editSuggestionError;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +93,8 @@ class PhotoDetailPage extends StatelessWidget {
                 // AI Analysis results
                 if (photo.analysisResult != null)
                   _buildAnalysisResults(context, photo),
+
+                _buildEditSuggestionSection(context, photo),
               ],
             ),
           );
@@ -219,15 +230,123 @@ class PhotoDetailPage extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Edit parameters
-          if (result.editParams.isNotEmpty)
-            _buildSection(
-              '🔧 Edit Parameters',
-              _formatParams(result.editParams),
-              Icons.edit,
-            ),
         ],
       ),
     );
+  }
+
+  Widget _buildEditSuggestionSection(BuildContext context, PhotoMetadata photo) {
+    final editSuggestion = photo.editSuggestion;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.tune,
+                  color: Colors.purple,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Edit Suggestions',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (editSuggestion == null) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isRequestingEditSuggestion
+                    ? null
+                    : () => _requestEditSuggestion(context, photo),
+                icon: _isRequestingEditSuggestion
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_fix_high),
+                label: Text(
+                  _isRequestingEditSuggestion
+                      ? '正在获取修图建议...'
+                      : '获取修图建议',
+                ),
+              ),
+            ),
+            if (_editSuggestionError != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _editSuggestionError!,
+                style: const TextStyle(color: Colors.redAccent),
+              ),
+            ],
+          ] else ...[
+            if (editSuggestion.filterSuggestions.isNotEmpty)
+              _buildSection(
+                '🎨 Filter Suggestions',
+                editSuggestion.filterSuggestions.join('\n'),
+                Icons.palette,
+              ),
+            const SizedBox(height: 16),
+            if (editSuggestion.editParams.isNotEmpty)
+              _buildSection(
+                '🔧 Edit Parameters',
+                _formatParams(editSuggestion.editParams),
+                Icons.edit,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _requestEditSuggestion(
+    BuildContext context,
+    PhotoMetadata photo,
+  ) async {
+    final analysisService = context.read<AnalysisService>();
+    final storageService = context.read<PhotoStorageService>();
+
+    setState(() {
+      _isRequestingEditSuggestion = true;
+      _editSuggestionError = null;
+    });
+
+    try {
+      final bytes = await File(photo.originalPath).readAsBytes();
+      final suggestion = await analysisService.suggestEditsForPhoto(bytes);
+      await storageService.saveEditSuggestion(photo.id, suggestion);
+
+      if (mounted) {
+        setState(() {
+          _isRequestingEditSuggestion = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isRequestingEditSuggestion = false;
+          _editSuggestionError = e.toString();
+        });
+      }
+    }
   }
 
   Widget _buildSection(String title, String content, IconData icon) {

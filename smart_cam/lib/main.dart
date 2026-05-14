@@ -58,8 +58,7 @@ class _SmartCamAppState extends State<SmartCamApp> {
 
     // Now create other services with loaded settings
     final analysisRepository = AnalysisApiRepository(
-      apiKey: _settingsService.settings.apiKey,
-      provider: _settingsService.settings.selectedProvider,
+      settingsProvider: () => _settingsService.settings,
     );
     _analysisService = AnalysisService(repository: analysisRepository);
     _analysisCoordinator = AnalysisCoordinator(
