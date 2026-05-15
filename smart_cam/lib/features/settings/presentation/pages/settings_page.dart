@@ -396,8 +396,8 @@ class _SettingsPageState extends State<SettingsPage> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: _testSuccess == true
-                  ? Colors.green.withValues(alpha: 0.1)
-                  : Colors.red.withValues(alpha: 0.1),
+                  ? Colors.green.withOpacity(0.1)
+                  : Colors.red.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: _testSuccess == true ? Colors.green : Colors.red,
