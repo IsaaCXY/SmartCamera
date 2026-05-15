@@ -6,6 +6,7 @@ import '../../../core/config/app_config.dart';
 import '../../../core/utils/logger.dart';
 import '../domain/analysis_result.dart';
 import '../domain/analysis_repository.dart';
+import '../domain/edit_suggestion.dart';
 
 enum AnalysisRunStatus {
   idle,
@@ -42,8 +43,19 @@ class AnalysisService extends ChangeNotifier {
   /// Analyze current frame if conditions are met.
   /// Returns true if analysis was started.
   Future<bool> analyzeIfReady(Uint8List imageData) async {
+    return _runAnalysis(imageData, respectCooldown: true);
+  }
+
+  Future<bool> analyzeNow(Uint8List imageData) async {
+    return _runAnalysis(imageData, respectCooldown: false);
+  }
+
+  Future<bool> _runAnalysis(
+    Uint8List imageData, {
+    required bool respectCooldown,
+  }) async {
     // Check cooldown
-    if (_lastAnalysisTime != null) {
+    if (respectCooldown && _lastAnalysisTime != null) {
       final elapsed = DateTime.now().difference(_lastAnalysisTime!);
       if (elapsed < AppConfig.analysisCooldown) {
         AppLogger.d('Skipping analysis: cooldown active', 'AnalysisService');
@@ -82,6 +94,25 @@ class AnalysisService extends ChangeNotifier {
       _lastErrorMessage = e.toString();
       AppLogger.e('Analysis failed', 'AnalysisService', e);
       return false;
+    } finally {
+      _isAnalyzing = false;
+      notifyListeners();
+    }
+  }
+
+  Future<EditSuggestion> suggestEditsForPhoto(Uint8List imageData) async {
+    if (_isAnalyzing) {
+      throw Exception('Analysis already in progress');
+    }
+
+    _isAnalyzing = true;
+    notifyListeners();
+
+    try {
+      return await _repository.suggestEditsForPhoto(imageData);
+    } catch (e) {
+      AppLogger.e('Edit suggestion failed', 'AnalysisService', e);
+      rethrow;
     } finally {
       _isAnalyzing = false;
       notifyListeners();

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:smart_cam/features/analysis/domain/analysis_repository.dart';
 import 'package:smart_cam/features/analysis/domain/analysis_result.dart';
+import 'package:smart_cam/features/analysis/domain/edit_suggestion.dart';
 import 'package:smart_cam/features/analysis/presentation/analysis_service.dart';
 
 class _FakeAnalysisRepository implements AnalysisRepository {
@@ -14,6 +15,14 @@ class _FakeAnalysisRepository implements AnalysisRepository {
   @override
   Future<AnalysisResult> analyzeImage(Uint8List imageData) {
     return _handler(imageData);
+  }
+
+  @override
+  Future<EditSuggestion> suggestEditsForPhoto(Uint8List imageData) async {
+    return const EditSuggestion(
+      filterSuggestions: ['Natural'],
+      editParams: {'brightness': '+5'},
+    );
   }
 }
 
@@ -68,6 +77,26 @@ void main() {
       expect(service.lastRunStatus, AnalysisRunStatus.failed);
       expect(service.lastRunMessage, contains('network failed'));
       expect(service.lastErrorMessage, contains('network failed'));
+    });
+
+    test('manual analysis bypasses cooldown', () async {
+      var requestCount = 0;
+      final service = AnalysisService(
+        repository: _FakeAnalysisRepository((_) async {
+          requestCount += 1;
+          return AnalysisResult(
+            shootingAdvice: '保持水平',
+            cameraParams: const {},
+            filterSuggestions: const [],
+            editParams: const {},
+          );
+        }),
+      );
+
+      expect(await service.analyzeIfReady(Uint8List.fromList([1])), isTrue);
+      expect(await service.analyzeNow(Uint8List.fromList([2])), isTrue);
+
+      expect(requestCount, 2);
     });
   });
 }

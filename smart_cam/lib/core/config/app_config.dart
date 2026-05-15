@@ -3,9 +3,17 @@ class AppConfig {
   // API Configuration
   static const String apiBaseUrl = 'http://localhost:8000/api';
   static const Duration apiTimeout = Duration(seconds: 10);
+  static const String openAiChatCompletionsUrl =
+      'https://api.openai.com/v1/chat/completions';
+  static const String openAiVisionModel = 'gpt-4.1-mini';
+  static const String anthropicMessagesUrl =
+      'https://api.anthropic.com/v1/messages';
+  static const String anthropicVersion = '2023-06-01';
+  static const String anthropicVisionModel = 'claude-sonnet-4-20250514';
   static const String zhipuGlmApiUrl =
       'https://open.bigmodel.cn/api/paas/v4/chat/completions';
   static const String zhipuGlmVisionModel = 'glm-4.5v';
+  static const String defaultAzureApiVersion = '2024-02-15-preview';
 
   // Camera Configuration
   static const Duration analysisCooldown = Duration(seconds: 3);

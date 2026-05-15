@@ -1,5 +1,6 @@
 // Photo metadata model for storing photo information and AI analysis results.
 import '../../analysis/domain/analysis_result.dart';
+import '../../analysis/domain/edit_suggestion.dart';
 
 class PhotoMetadata {
   /// Unique identifier for the photo
@@ -17,6 +18,9 @@ class PhotoMetadata {
   /// AI analysis result (optional)
   final AnalysisResult? analysisResult;
 
+  /// On-demand edit suggestion for this photo (optional)
+  final EditSuggestion? editSuggestion;
+
   /// Camera settings used (optional)
   final Map<String, dynamic>? cameraSettings;
 
@@ -26,6 +30,7 @@ class PhotoMetadata {
     required this.thumbnailPath,
     required this.capturedAt,
     this.analysisResult,
+    this.editSuggestion,
     this.cameraSettings,
   });
 
@@ -39,6 +44,10 @@ class PhotoMetadata {
       analysisResult: json['analysisResult'] != null
           ? AnalysisResult.fromJson(
               json['analysisResult'] as Map<String, dynamic>)
+          : null,
+      editSuggestion: json['editSuggestion'] != null
+          ? EditSuggestion.fromJson(
+              json['editSuggestion'] as Map<String, dynamic>)
           : null,
       cameraSettings: json['cameraSettings'] != null
           ? Map<String, dynamic>.from(json['cameraSettings'] as Map)
@@ -54,12 +63,29 @@ class PhotoMetadata {
       'thumbnailPath': thumbnailPath,
       'capturedAt': capturedAt.toIso8601String(),
       'analysisResult': analysisResult?.toJson(),
+      'editSuggestion': editSuggestion?.toJson(),
       'cameraSettings': cameraSettings,
     };
   }
 
+  PhotoMetadata copyWith({
+    AnalysisResult? analysisResult,
+    EditSuggestion? editSuggestion,
+    Map<String, dynamic>? cameraSettings,
+  }) {
+    return PhotoMetadata(
+      id: id,
+      originalPath: originalPath,
+      thumbnailPath: thumbnailPath,
+      capturedAt: capturedAt,
+      analysisResult: analysisResult ?? this.analysisResult,
+      editSuggestion: editSuggestion ?? this.editSuggestion,
+      cameraSettings: cameraSettings ?? this.cameraSettings,
+    );
+  }
+
   @override
   String toString() {
-    return 'PhotoMetadata(id: $id, capturedAt: $capturedAt, hasAnalysis: ${analysisResult != null})';
+    return 'PhotoMetadata(id: $id, capturedAt: $capturedAt, hasAnalysis: ${analysisResult != null}, hasEditSuggestion: ${editSuggestion != null})';
   }
 }

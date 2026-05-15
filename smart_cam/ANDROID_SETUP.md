@@ -41,7 +41,7 @@ In `android/app/build.gradle`, verify:
 
 ```gradle
 android {
-    compileSdkVersion 34
+    compileSdkVersion 36
     
     defaultConfig {
         applicationId "com.smartcam.smart_cam"

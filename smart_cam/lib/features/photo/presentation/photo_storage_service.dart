@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:image/image.dart' as img;
 import '../../analysis/domain/analysis_result.dart';
+import '../../analysis/domain/edit_suggestion.dart';
 import '../domain/photo_metadata.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/utils/logger.dart';
@@ -115,6 +116,22 @@ class PhotoStorageService extends ChangeNotifier {
     } catch (e) {
       return null;
     }
+  }
+
+  /// Save edit suggestion for a single photo.
+  Future<void> saveEditSuggestion(
+    String id,
+    EditSuggestion editSuggestion,
+  ) async {
+    final index = _photos.indexWhere((photo) => photo.id == id);
+    if (index == -1) {
+      throw Exception('Photo not found: $id');
+    }
+
+    _photos[index] = _photos[index].copyWith(editSuggestion: editSuggestion);
+    await _saveMetadata();
+    AppLogger.i('Edit suggestion saved: $id', 'PhotoStorageService');
+    notifyListeners();
   }
 
   /// Delete photo by ID
