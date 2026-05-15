@@ -218,7 +218,7 @@ class _CameraPageState extends State<CameraPage>
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.7),
+              color: Colors.black.withOpacity(0.7),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
@@ -342,7 +342,7 @@ class _CameraPageState extends State<CameraPage>
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.5),
+              color: Colors.black.withOpacity(0.5),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: Colors.white, size: 24),
@@ -409,7 +409,7 @@ class _CameraPageState extends State<CameraPage>
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: Colors.white.withOpacity(0.3),
                     blurRadius: 10,
                     spreadRadius: 2,
                   ),
@@ -515,10 +515,10 @@ class _CameraPageState extends State<CameraPage>
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.5),
+            color: Colors.black.withOpacity(0.5),
             shape: BoxShape.circle,
             border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3), width: 1),
+                color: Colors.white.withOpacity(0.3), width: 1),
           ),
           child: const Icon(
             Icons.settings,
@@ -571,10 +571,10 @@ class _CameraPageState extends State<CameraPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.3),
+        color: Colors.orange.withOpacity(0.3),
         borderRadius: BorderRadius.circular(4),
         border:
-            Border.all(color: Colors.orange.withValues(alpha: 0.5), width: 1),
+            Border.all(color: Colors.orange.withOpacity(0.5), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -658,10 +658,10 @@ class _CameraPageState extends State<CameraPage>
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.orange.withValues(alpha: 0.2),
+          color: Colors.orange.withOpacity(0.2),
           borderRadius: BorderRadius.circular(8),
           border:
-              Border.all(color: Colors.orange.withValues(alpha: 0.3), width: 1),
+              Border.all(color: Colors.orange.withOpacity(0.3), width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -825,7 +825,7 @@ class _CameraPageState extends State<CameraPage>
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
-        backgroundColor: Colors.black.withValues(alpha: 0.8),
+        backgroundColor: Colors.black.withOpacity(0.8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -924,7 +924,7 @@ class FocusTapIndicator extends StatelessWidget {
           height: indicatorSize,
           decoration: BoxDecoration(
             border: Border.all(
-              color: Colors.amberAccent.withValues(alpha: 0.95),
+              color: Colors.amberAccent.withOpacity(0.95),
               width: 2,
             ),
             borderRadius: BorderRadius.circular(4),
@@ -934,7 +934,7 @@ class FocusTapIndicator extends StatelessWidget {
               width: 6,
               height: 6,
               decoration: BoxDecoration(
-                color: Colors.amberAccent.withValues(alpha: 0.95),
+                color: Colors.amberAccent.withOpacity(0.95),
                 shape: BoxShape.circle,
               ),
             ),
@@ -1019,7 +1019,7 @@ class _RuleOfThirdsGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.35)
+      ..color = Colors.white.withOpacity(0.35)
       ..strokeWidth = 1;
 
     final firstVertical = size.width / 3;
