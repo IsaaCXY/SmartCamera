@@ -105,7 +105,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          initialValue: currentProvider,
+          value:currentProvider,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
             hintText: 'Select provider',
@@ -219,7 +219,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
         // URL Type Dropdown
         DropdownButtonFormField<String>(
-          initialValue: settingsService.settings.customUrlType,
+          value:settingsService.settings.customUrlType,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
             labelText: 'URL Type',
